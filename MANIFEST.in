@@ -1,0 +1,4 @@
+include README.md
+recursive-include octoprint_crealitycloud/templates *
+recursive-include octoprint_crealitycloud/translations *
+recursive-include octoprint_crealitycloud/static *
