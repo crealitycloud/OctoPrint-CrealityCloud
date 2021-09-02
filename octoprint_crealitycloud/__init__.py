@@ -1,14 +1,18 @@
 # coding=utf-8
 from __future__ import absolute_import
-import time
-import uuid
+
 import logging
 import threading
+import time
+import uuid
+
 import octoprint.plugin
-from flask import render_template, request, jsonify
+from flask import jsonify, render_template, request
 from octoprint.events import Events
 from octoprint.server import admin_permission
+
 from .crealitycloud import CrealityCloud
+
 ### (Don't forget to remove me)
 # This is a basic skeleton for your plugin's __init__.py. You probably want to adjust the class name of your plugin
 # as well as the plugin mixins it's subclassing from. This is really just a basic skeleton to get you started,
@@ -17,19 +21,23 @@ from .crealitycloud import CrealityCloud
 #
 # Take a look at the documentation on what other plugin mixins are available.
 
-import octoprint.plugin
 
-class CrealitycloudPlugin(octoprint.plugin.StartupPlugin,
-                       octoprint.plugin.TemplatePlugin,
-                       octoprint.plugin.SettingsPlugin,
-                       octoprint.plugin.AssetPlugin,
-                       octoprint.plugin.EventHandlerPlugin
+class CrealitycloudPlugin(
+    octoprint.plugin.StartupPlugin,
+    octoprint.plugin.TemplatePlugin,
+    octoprint.plugin.SettingsPlugin,
+    octoprint.plugin.AssetPlugin,
+    octoprint.plugin.ProgressPlugin,
+    octoprint.plugin.EventHandlerPlugin,
 ):
     def __init__(self):
-        self._logger = logging.getLogger('octoprint.plugins.crealitycloud')
-        self._logger.info("-------------------------------creality cloud init!------------------") 
-        #self.crealitycloud = CrealityCloud()
-    ##~~ SettingsPlugin mixin
+        self._logger = logging.getLogger("octoprint.plugins.crealitycloud")
+        self._logger.info(
+            "-------------------------------creality cloud init!------------------"
+        )
+
+    def initialize(self):
+        self.crealitycloud = CrealityCloud(self)
 
     def get_settings_defaults(self):
         return {
@@ -44,45 +52,23 @@ class CrealitycloudPlugin(octoprint.plugin.StartupPlugin,
         return {
             "js": ["js/crealitycloud.js"],
             "css": ["css/crealitycloud.css"],
-            "less": ["less/crealitycloud.less"]
+            "less": ["less/crealitycloud.less"],
         }
+
     ##~~ def on_after_startup(self):
     def on_after_startup(self):
-        self._logger.info("-------------------------------creality cloud stared!------------------") 
+        self._logger.info(
+            "-------------------------------creality cloud stared!------------------"
+        )
+        self.crealitycloud.on_start()
 
     def on_event(self, event, payload):
-        if event == Events.FIRMWARE_DATA:
-            if "MACHINE_TYPE" in payload["data"]:
-                machine_type = payload["data"]["MACHINE_TYPE"]
-                self._settings.set(['machine_type'], machine_type)
-                self._settings.save()
-
-
-        if event == Events.PRINT_STARTED:
-            self.crealitycloud.on_event(state=0)
-
-        if event == Events.PRINT_CANCELLED:
-            self.cancelled = True
-
-        if event == Events.PRINT_DONE:
-            # 完成消息
-            self.crealitycloud.on_event(state=1)
-
-        if event == Events.CONNECTED:
-            # reboot消息
-            # self._logger.info("notify remote reboot ...")
-            self.crealitycloud.on_event(state=2)
-
-        if event == Events.PRINTER_STATE_CHANGED:
-            if payload["state_id"] == "OPERATIONAL":
-                # cancelled 的任务状态变为operational时，发送完成消息
-                if self.cancelled:
-                    self.cloud_task.on_event(state=0, continue_code="stop")
-                    self.cancelled = False
-                #printer_manager = printer_manager_instance(self)
-                #printer_manager.clean_file()
+        self.crealitycloud.on_event(event, payload)
 
     ##~~ Softwareupdate hook
+    def on_print_progress(self,storage, path, progress):
+        print(storage)
+        self.crealitycloud.on_progress(storage,progress)
 
     def get_update_information(self):
         # Define the configuration for your plugin to use with the Software Update
@@ -92,13 +78,11 @@ class CrealitycloudPlugin(octoprint.plugin.StartupPlugin,
             "crealitycloud": {
                 "displayName": "Crealitycloud Plugin",
                 "displayVersion": self._plugin_version,
-
                 # version check: github repository
                 "type": "github_release",
                 "user": "hemiao218",
                 "repo": "OctoPrint-Crealitycloud",
                 "current": self._plugin_version,
-
                 # update method: pip
                 "pip": "https://github.com/hemiao218/OctoPrint-Crealitycloud/archive/{target_version}.zip",
             }
@@ -113,10 +97,12 @@ __plugin_name__ = "Crealitycloud Plugin"
 # Starting with OctoPrint 1.4.0 OctoPrint will also support to run under Python 3 in addition to the deprecated
 # Python 2. New plugins should make sure to run under both versions for now. Uncomment one of the following
 # compatibility flags according to what Python versions your plugin supports!
-#__plugin_pythoncompat__ = ">=2.7,<3" # only python 2
-#__plugin_pythoncompat__ = ">=3,<4" # only python 3
-#__plugin_pythoncompat__ = ">=2.7,<4" # python 2 and 3
+# __plugin_pythoncompat__ = ">=2.7,<3" # only python 2
+# __plugin_pythoncompat__ = ">=3,<4" # only python 3
+# __plugin_pythoncompat__ = ">=2.7,<4" # python 2 and 3
 __plugin_pythoncompat__ = ">=2.7,<4"
+
+
 def __plugin_load__():
     global __plugin_implementation__
     __plugin_implementation__ = CrealitycloudPlugin()
