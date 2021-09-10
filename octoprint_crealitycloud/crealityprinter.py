@@ -15,6 +15,8 @@ import requests
 from octoprint.events import Events, eventManager
 from paho.mqtt.client import DISCONNECT
 
+from .config import CreailtyConfig
+
 
 class ErrorCode(Enum):
     UNKNOW = 0
@@ -36,7 +38,7 @@ class CrealityPrinter(object):
         self.__linkkit = lk
         self.plugin = plugin
         self._logger = logging.getLogger("octoprint.plugins.crealityprinter")
-
+        self._config = CreailtyConfig(plugin)
         self._settings = plugin._settings
         self.printer = plugin._printer
         self._logger.info(
@@ -47,10 +49,19 @@ class CrealityPrinter(object):
         self._pause = 0
         self._nozzleTemp2 = 0
         self._bedTemp2 = 0
+        self._APILicense = None
+        self._initString = None
+        self._DIDString = None
 
     def __setitem__(self, k, v):
         print("__setitem__:" + k)
         self.__dict__[k] = v
+
+    def _upload_data(self, payload):
+        try:
+            self.__linkkit.thing_post_property(payload)
+        except Exception as e:
+            self._logger.error(str(e))
 
     @property
     def printId(self):
@@ -59,7 +70,7 @@ class CrealityPrinter(object):
     @printId.setter
     def printId(self, v):
         self._printId = v
-        self.__linkkit.thing_post_property({"printId": self._printId})
+        self._upload_data({"printId": self._printId})
         print("=============" + self._printId)
 
     @property
@@ -95,7 +106,7 @@ class CrealityPrinter(object):
     @state.setter
     def state(self, v):
         self._state = v
-        self.__linkkit.thing_post_property({"state": self._state})
+        self._upload_data({"state": self._state})
 
     @property
     def dProgress(self):
@@ -104,7 +115,7 @@ class CrealityPrinter(object):
     @dProgress.setter
     def dProgress(self, v):
         self._dProgress = v
-        self.__linkkit.thing_post_property({"dProgress": int(self._dProgress)})
+        self._upload_data({"dProgress": int(self._dProgress)})
 
     @property
     def connect(self):
@@ -117,13 +128,13 @@ class CrealityPrinter(object):
     @error.setter
     def error(self, v):
         self._error = v
-        self.__linkkit.thing_post_property({"err": self._error})
+        self._upload_data({"err": self._error})
         self._logger.info("post error:" + str(self._error))
 
     @connect.setter
     def connect(self, v):
         self._connected = v
-        self.__linkkit.thing_post_property({"connect": self._connected})
+        self._upload_data({"connect": self._connected})
 
     @property
     def pause(self):
@@ -133,7 +144,7 @@ class CrealityPrinter(object):
     def pause(self, v):
         if str(v) != self._pause:
             self._pause = str(v)
-            self.__linkkit.thing_post_property({"pause": self._pause})
+            self._upload_data({"pause": self._pause})
             if self._pause == 0:
                 if self.printer.is_paused():
                     self.printer.resume_print()
@@ -148,7 +159,7 @@ class CrealityPrinter(object):
     @tfCard.setter
     def tfCard(self, v):
         self._tfCard = v
-        self.__linkkit.thing_post_property({"tfCard": self._tfCard})
+        self._upload_data({"tfCard": self._tfCard})
 
     @property
     def model(self):
@@ -157,7 +168,7 @@ class CrealityPrinter(object):
     @model.setter
     def model(self, v):
         self._model = v
-        self.__linkkit.thing_post_property({"model": self._model})
+        self._upload_data({"model": self._model})
 
     @property
     def stop(self):
@@ -177,7 +188,7 @@ class CrealityPrinter(object):
     @nozzleTemp.setter
     def nozzleTemp(self, v):
         self._nozzleTemp = v
-        self.__linkkit.thing_post_property({"nozzleTemp": int(self._nozzleTemp)})
+        self._upload_data({"nozzleTemp": int(self._nozzleTemp)})
 
     @property
     def nozzleTemp2(self):
@@ -187,7 +198,7 @@ class CrealityPrinter(object):
     def nozzleTemp2(self, v):
         if int(v) != self._nozzleTemp2:
             self._nozzleTemp2 = int(v)
-            self.__linkkit.thing_post_property({"nozzleTemp": int(self._nozzleTemp2)})
+            self._upload_data({"nozzleTemp2": int(self._nozzleTemp2)})
             self.printer.set_temperature("tool0", int(v))
 
     @property
@@ -197,7 +208,7 @@ class CrealityPrinter(object):
     @bedTemp.setter
     def bedTemp(self, v):
         self._bedTemp = v
-        self.__linkkit.thing_post_property({"bedTemp": int(self._bedTemp)})
+        self._upload_data({"bedTemp": int(self._bedTemp)})
 
     @property
     def bedTemp2(self):
@@ -205,12 +216,10 @@ class CrealityPrinter(object):
 
     @bedTemp2.setter
     def bedTemp2(self, v):
-        print("bed temp2" + str(v))
         if int(v) != self._bedTemp2:
             self._bedTemp2 = int(v)
-            self.__linkkit.thing_post_property({"bedTemp2": self._bedTemp2})
+            self._upload_data({"bedTemp2": self._bedTemp2})
             self.printer.set_temperature("bed", self._bedTemp2)
-            print("set temp2:" + str(self._bedTemp2))
 
     @property
     def boxVersion(self):
@@ -219,7 +228,7 @@ class CrealityPrinter(object):
     @boxVersion.setter
     def boxVersion(self, v):
         self._boxVersion = v
-        self.__linkkit.thing_post_property({"boxVersion": self._boxVersion})
+        self._upload_data({"boxVersion": self._boxVersion})
 
     @property
     def printProgress(self):
@@ -228,7 +237,7 @@ class CrealityPrinter(object):
     @printProgress.setter
     def printProgress(self, v):
         self._printProgress = v
-        self.__linkkit.thing_post_property({"printProgress": self._printProgress})
+        self._upload_data({"printProgress": self._printProgress})
 
     @property
     def layer(self):
@@ -237,7 +246,37 @@ class CrealityPrinter(object):
     @layer.setter
     def layer(self, v):
         self._layer = v
-        self.__linkkit.thing_post_property({"layer": self._layer})
+        self._upload_data({"layer": self._layer})
+
+    @property
+    def InitString(self):
+        return self._initString
+
+    @InitString.setter
+    def InitString(self, v):
+        self._initString = v
+        self._config.save_p2p_config("InitString", v)
+        self._upload_data({"InitString": self._initString})
+
+    @property
+    def APILicense(self):
+        return self._APILicense
+
+    @APILicense.setter
+    def APILicense(self, v):
+        self._APILicense = v
+        self._config.save_p2p_config("APILicense", v)
+        self._upload_data({"APILicense": self._APILicense})
+
+    @property
+    def DIDString(self):
+        return self._DIDString
+
+    @DIDString.setter
+    def DIDString(self, v):
+        self._DIDString = v
+        self._config.save_p2p_config("DIDString", v)
+        self._upload_data({"DIDString": self._DIDString})
 
     def _process_file_request(self, download_url, new_filename):
         from octoprint.filemanager.destinations import FileDestinations
