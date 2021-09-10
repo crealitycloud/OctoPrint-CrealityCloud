@@ -1,9 +1,9 @@
 import gzip
-import io
 import logging
 import os
 import tempfile
 import threading
+import time
 import uuid
 from contextlib import closing
 from enum import Enum
@@ -14,6 +14,8 @@ import psutil
 import requests
 from octoprint.events import Events, eventManager
 from paho.mqtt.client import DISCONNECT
+
+from .config import CreailtyConfig
 
 
 class ErrorCode(Enum):
@@ -36,7 +38,7 @@ class CrealityPrinter(object):
         self.__linkkit = lk
         self.plugin = plugin
         self._logger = logging.getLogger("octoprint.plugins.crealityprinter")
-
+        self._config = CreailtyConfig(plugin)
         self._settings = plugin._settings
         self.printer = plugin._printer
         self._logger.info(
@@ -47,10 +49,20 @@ class CrealityPrinter(object):
         self._pause = 0
         self._nozzleTemp2 = 0
         self._bedTemp2 = 0
+        self._APILicense = None
+        self._initString = None
+        self._DIDString = None
+        self._dProgress = 0
 
     def __setitem__(self, k, v):
         print("__setitem__:" + k)
         self.__dict__[k] = v
+
+    def _upload_data(self, payload):
+        try:
+            self.__linkkit.thing_post_property(payload)
+        except Exception as e:
+            self._logger.error(str(e))
 
     @property
     def printId(self):
@@ -59,7 +71,7 @@ class CrealityPrinter(object):
     @printId.setter
     def printId(self, v):
         self._printId = v
-        self.__linkkit.thing_post_property({"printId": self._printId})
+        self._upload_data({"printId": self._printId})
         print("=============" + self._printId)
 
     @property
@@ -69,8 +81,7 @@ class CrealityPrinter(object):
     @print.setter
     def print(self, url):
         self._print = url
-        self.state = 1
-
+        self.layer = 0
         printId = str(uuid.uuid1()).replace("-", "")
         # self.printId = printId
         self._download_thread = threading.Thread(
@@ -81,12 +92,25 @@ class CrealityPrinter(object):
         print("print:" + url)
 
     @property
+    def video(self):
+        return self._video
+
+    @video.setter
+    def video(self, v):
+        self._video = v
+        self._upload_data({"video": v})
+
+    @property
     def ReqPrinterPara(self):
         return self._ReqPrinterPara
 
     @ReqPrinterPara.setter
     def ReqPrinterPara(self, v):
         self._ReqPrinterPara = int(v)
+        if self._ReqPrinterPara == 0:
+            self._upload_data({"curFeedratePct": 0})
+        if self._ReqPrinterPara == 1:
+            self._upload_data({"curPosition": "X0.00 Y0.00 Z:0.00"})
 
     @property
     def state(self):
@@ -95,7 +119,7 @@ class CrealityPrinter(object):
     @state.setter
     def state(self, v):
         self._state = v
-        self.__linkkit.thing_post_property({"state": self._state})
+        self._upload_data({"state": self._state})
 
     @property
     def dProgress(self):
@@ -104,7 +128,7 @@ class CrealityPrinter(object):
     @dProgress.setter
     def dProgress(self, v):
         self._dProgress = v
-        self.__linkkit.thing_post_property({"dProgress": int(self._dProgress)})
+        self._upload_data({"dProgress": self._dProgress})
 
     @property
     def connect(self):
@@ -117,13 +141,13 @@ class CrealityPrinter(object):
     @error.setter
     def error(self, v):
         self._error = v
-        self.__linkkit.thing_post_property({"err": self._error})
+        self._upload_data({"err": self._error})
         self._logger.info("post error:" + str(self._error))
 
     @connect.setter
     def connect(self, v):
         self._connected = v
-        self.__linkkit.thing_post_property({"connect": self._connected})
+        self._upload_data({"connect": self._connected})
 
     @property
     def pause(self):
@@ -131,15 +155,17 @@ class CrealityPrinter(object):
 
     @pause.setter
     def pause(self, v):
-        if str(v) != self._pause:
-            self._pause = str(v)
-            self.__linkkit.thing_post_property({"pause": self._pause})
+        if int(v) != self._pause:
+            self._pause = int(v)
+            self._upload_data({"pause": self._pause})
             if self._pause == 0:
                 if self.printer.is_paused():
                     self.printer.resume_print()
+                    self.state = 1
             if self._pause == 1:
                 if not self.printer.is_paused():
                     self.printer.pause_print()
+                    self.state = 5
 
     @property
     def tfCard(self):
@@ -148,7 +174,7 @@ class CrealityPrinter(object):
     @tfCard.setter
     def tfCard(self, v):
         self._tfCard = v
-        self.__linkkit.thing_post_property({"tfCard": self._tfCard})
+        self._upload_data({"tfCard": self._tfCard})
 
     @property
     def model(self):
@@ -157,7 +183,7 @@ class CrealityPrinter(object):
     @model.setter
     def model(self, v):
         self._model = v
-        self.__linkkit.thing_post_property({"model": self._model})
+        self._upload_data({"model": self._model})
 
     @property
     def stop(self):
@@ -177,7 +203,7 @@ class CrealityPrinter(object):
     @nozzleTemp.setter
     def nozzleTemp(self, v):
         self._nozzleTemp = v
-        self.__linkkit.thing_post_property({"nozzleTemp": int(self._nozzleTemp)})
+        self._upload_data({"nozzleTemp": int(self._nozzleTemp)})
 
     @property
     def nozzleTemp2(self):
@@ -187,7 +213,7 @@ class CrealityPrinter(object):
     def nozzleTemp2(self, v):
         if int(v) != self._nozzleTemp2:
             self._nozzleTemp2 = int(v)
-            self.__linkkit.thing_post_property({"nozzleTemp": int(self._nozzleTemp2)})
+            self._upload_data({"nozzleTemp2": int(self._nozzleTemp2)})
             self.printer.set_temperature("tool0", int(v))
 
     @property
@@ -197,7 +223,7 @@ class CrealityPrinter(object):
     @bedTemp.setter
     def bedTemp(self, v):
         self._bedTemp = v
-        self.__linkkit.thing_post_property({"bedTemp": int(self._bedTemp)})
+        self._upload_data({"bedTemp": int(self._bedTemp)})
 
     @property
     def bedTemp2(self):
@@ -205,12 +231,10 @@ class CrealityPrinter(object):
 
     @bedTemp2.setter
     def bedTemp2(self, v):
-        print("bed temp2" + str(v))
         if int(v) != self._bedTemp2:
             self._bedTemp2 = int(v)
-            self.__linkkit.thing_post_property({"bedTemp2": self._bedTemp2})
+            self._upload_data({"bedTemp2": self._bedTemp2})
             self.printer.set_temperature("bed", self._bedTemp2)
-            print("set temp2:" + str(self._bedTemp2))
 
     @property
     def boxVersion(self):
@@ -219,7 +243,7 @@ class CrealityPrinter(object):
     @boxVersion.setter
     def boxVersion(self, v):
         self._boxVersion = v
-        self.__linkkit.thing_post_property({"boxVersion": self._boxVersion})
+        self._upload_data({"boxVersion": self._boxVersion})
 
     @property
     def printProgress(self):
@@ -228,7 +252,7 @@ class CrealityPrinter(object):
     @printProgress.setter
     def printProgress(self, v):
         self._printProgress = v
-        self.__linkkit.thing_post_property({"printProgress": self._printProgress})
+        self._upload_data({"printProgress": self._printProgress})
 
     @property
     def layer(self):
@@ -237,7 +261,84 @@ class CrealityPrinter(object):
     @layer.setter
     def layer(self, v):
         self._layer = v
-        self.__linkkit.thing_post_property({"layer": self._layer})
+        self._upload_data({"layer": self._layer})
+
+    @property
+    def InitString(self):
+        return self._initString
+
+    @InitString.setter
+    def InitString(self, v):
+        self._initString = v
+        self._config.save_p2p_config("InitString", v)
+        self._upload_data({"InitString": self._initString})
+
+    @property
+    def APILicense(self):
+        return self._APILicense
+
+    @APILicense.setter
+    def APILicense(self, v):
+        self._APILicense = v
+        self._config.save_p2p_config("APILicense", v)
+        self._upload_data({"APILicense": self._APILicense})
+
+    @property
+    def DIDString(self):
+        return self._DIDString
+
+    @DIDString.setter
+    def DIDString(self, v):
+        self._DIDString = v
+        self._config.save_p2p_config("DIDString", v)
+        self._upload_data({"DIDString": self._DIDString})
+
+    @property
+    def fan(self):
+        return self._fan
+
+    @fan.setter
+    def fan(self, v):
+        self._fan = v
+
+    @property
+    def curFeedratePct(self):
+        return self._curFeedratePct
+
+    @property
+    def setFeedratePct(self):
+        return self._curFeedratePct
+
+    @property
+    def autohome(self):
+        return self._autohome
+
+    @autohome.setter
+    def autohome(self, v):
+        axes = []
+        self._autohome = v
+        if "x" in self._autohome:
+            axes.append("x")
+        if "y" in self._autohome:
+            axes.append("y")
+        if "z" in self._autohome:
+            axes.append("z")
+        self.printer.home(axes)
+
+    @setFeedratePct.setter
+    def setFeedratePct(self, v):
+        self._curFeedratePct = int(v)
+        self.printer.feed_rate(self._curFeedratePct)
+        self._upload_data({"curFeedratePct": self._curFeedratePct})
+
+    @property
+    def printStartTime(self):
+        return self._printStartTime
+
+    @printStartTime.setter
+    def printStartTime(self, v):
+        self._printStartTime = v
+        self._upload_data({"printStartTime": str(self._printStartTime)})
 
     def _process_file_request(self, download_url, new_filename):
         from octoprint.filemanager.destinations import FileDestinations
@@ -337,7 +438,8 @@ class CrealityPrinter(object):
         #    pass
         except Exception:
             self._logger.warning("Failed to remove file at {}".format(temp_path))
-
+        self.state = 1
+        self.printStartTime = int(time.time())
         # We got to the end \o/
         # Likely means everything went OK
         return True
@@ -350,12 +452,16 @@ class CrealityPrinter(object):
             chunk_size = 1024  # 单次请求最大值
             content_size = int(response.headers["content-length"])  # 内容体总大小
             data_count = 0
+            now_time = time.time()
             with open(file_path, "wb") as file:
                 for data in response.iter_content(chunk_size=chunk_size):
                     file.write(data)
                     data_count = data_count + len(data)
                     now_jd = (data_count / content_size) * 100
-                    self.dProgress = now_jd
+
+                    if time.time() - now_time > 2:
+                        now_time = time.time()
+                        self.dProgress = int(now_jd)
                     print(
                         "\r 文件下载进度：%d%%(%d/%d) - %s"
                         % (now_jd, data_count, content_size, file_path),

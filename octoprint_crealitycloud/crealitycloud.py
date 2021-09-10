@@ -1,4 +1,7 @@
 import logging
+import os
+import subprocess
+import threading
 
 from linkkit import linkkit
 from octoprint.events import Events
@@ -15,6 +18,7 @@ class CrealityCloud(object):
         self.plugin = plugin
         self._octoprinter = plugin._printer
         self._config = CreailtyConfig(plugin)
+        self._video_started = False
         self.config_data = self._config.data()
         self.connect_aliyun(
             self.config_data["region"],
@@ -25,6 +29,9 @@ class CrealityCloud(object):
         self._aliprinter = CrealityPrinter(plugin, self.lk)
         self._report_timer = PerpetualTimer(5, self.report_temperatures)
 
+        self._p2p_service_thread = None
+        self._video_service_thread = None
+
     def connect_aliyun(self, region, pk, dn, ds):
         self.lk = linkkit.LinkKit(
             host_name=self.region_to_string(region),
@@ -32,6 +39,8 @@ class CrealityCloud(object):
             device_name=dn,
             device_secret=ds,
         )
+        # current_dir = os.path.dirname(os.path.abspath(__file__))
+
         self.lk.enable_logger(logging.WARNING)
         self.lk.on_device_dynamic_register = self.on_device_dynamic_register
         self.lk.on_connect = self.on_connect
@@ -44,6 +53,7 @@ class CrealityCloud(object):
         self.lk.on_thing_prop_post = self.on_thing_prop_post
         self.lk.on_thing_raw_data_arrived = self.on_thing_raw_data_arrived
         self.lk.on_thing_raw_data_arrived = self.on_thing_raw_data_arrived
+        # self.lk.on_thing_shadow_get = self.on_thing_shadow_get
         self.lk.thing_setup()
         self.lk.connect_async()
         self.lk.start_worker_loop()
@@ -51,6 +61,9 @@ class CrealityCloud(object):
     def region_to_string(self, num):
         regions = {0: "cn-shanghai", 1: "us-west-1", 2: "ap-southeast-1"}
         return regions.get(num)
+
+    def on_thing_shadow_get(self, payload, userdata):
+        print("prop data:%r" % self.rawDataToProtocol(payload))
 
     def on_thing_raw_data_arrived(self, payload, userdata):
         print("on_thing_raw_data_arrived:%r" % payload)
@@ -85,7 +98,6 @@ class CrealityCloud(object):
 
     def on_connect(self, session_flag, rc, userdata):
         print("on_connect:%d,rc:%d" % (session_flag, rc))
-
         pass
 
     def on_disconnect(self, rc, userdata):
@@ -120,22 +132,27 @@ class CrealityCloud(object):
 
     def on_start(self):
         prop_data = {
-            "ownerId": {
-                "ownerId": self.config_data["ownerId"],
-                "deviceName": self.config_data["deviceName"],
-            }
+            "InitString": self._config.p2p_data().get("InitString"),
+            "APILicense": self._config.p2p_data().get("APILicense"),
+            "DIDString": self._config.p2p_data().get("DIDString"),
         }
         self.lk.thing_post_property(prop_data)
+        if os.path.exists("/dev/video0"):
+            self.start_video_service()
+            self.start_p2p_service()
+            self._aliprinter.video = 1
+        else:
+            self._aliprinter.video = 0
 
     def on_event(self, event, payload):
         if event == Events.FIRMWARE_DATA:
             if "MACHINE_TYPE" in payload["data"]:
                 machine_type = payload["data"]["MACHINE_TYPE"]
-
                 self._aliprinter.model = machine_type
                 self._aliprinter.boxVersion = "octo_v1.01b1"
         if event == Events.CONNECTED:
             self._aliprinter.state = 0
+            self._aliprinter.printId = ""
             self._aliprinter.connect = 1
             self._report_timer.start()
 
@@ -194,17 +211,63 @@ class CrealityCloud(object):
         self._aliprinter.printProgress = progress
 
     def report_temperatures(self):
-        # self._aliprinter.nozzleTemp = 1
+        self.lk.thing_get_shadow()
         data = self._octoprinter.get_current_temperatures()
         if not data:
-            print("can't get temperatures")
+            self._logger.error("can't get temperatures")
         else:
-            self._aliprinter.nozzleTemp = data["tool0"]["actual"]
-            self._aliprinter.nozzleTemp2 = data["tool0"]["target"]
-            self._aliprinter.bedTemp = data["bed"]["actual"]
-            self._aliprinter.bedTemp2 = data["bed"]["target"]
-            print(
-                str(self._aliprinter.nozzleTemp) + "----" + str(self._aliprinter.bedTemp)
+            if data.get("tool0") is not None:
+                self._aliprinter.nozzleTemp = data["tool0"].get("actual")
+                self._aliprinter.nozzleTemp2 = data["tool0"].get("target")
+            if data.get("bed") is not None:
+                self._aliprinter.bedTemp = data["bed"].get("actual")
+                self._aliprinter.bedTemp2 = data["bed"].get("target")
+            self._logger.info(
+                str(self._aliprinter.nozzleTemp)
+                + "----"
+                + str(self._aliprinter.bedTemp)
+                + "---"
+                + str(self._octoprinter.is_printing())
             )
         # self._report_timer.start()
         # self._aliprinter.nozzleTemp2 =2
+
+    def start_p2p_service(self):
+        if self._p2p_service_thread is not None:
+            self._p2p_service_thread.cancel()
+        p2p_service_path = (
+            os.path.dirname(os.path.abspath(__file__)) + "/bin/p2p_server.sh"
+        )
+        if not os.path.exists(p2p_service_path):
+            return
+        if self._config.p2p_data().get("APILicense") is not None:
+            env = os.environ.copy()
+            env["APILicense"] = self._config.p2p_data().get("APILicense")
+            env["DIDString"] = self._config.p2p_data().get("DIDString")
+            env["InitString"] = self._config.p2p_data().get("InitString")
+            env["RtspPort"] = "8554"
+            self._p2p_service_thread = threading.Thread(
+                target=self._runcmd, args=(["/bin/bash", p2p_service_path], env)
+            )
+            self._p2p_service_thread.start()
+
+    def start_video_service(self):
+        if self._video_service_thread is not None:
+            self._video_service_thread.cancel()
+        video_service_path = (
+            os.path.dirname(os.path.abspath(__file__)) + "/bin/rtsp_server.sh"
+        )
+        if self._config.p2p_data().get("APILicense") is not None:
+            env = os.environ.copy()
+            self._video_service_thread = threading.Thread(
+                target=self._runcmd, args=(["/bin/bash", video_service_path], env)
+            )
+            self._video_service_thread.start()
+
+    def _runcmd(self, command, env):
+        popen = subprocess.Popen(command, env=env)
+        return_code = popen.wait()
+        if return_code == 0:
+            self._logger.info("_runcmd success:", return_code)
+        else:
+            self._logger.error("_runcmd error:", return_code)
