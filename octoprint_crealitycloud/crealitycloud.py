@@ -28,6 +28,8 @@ class CrealityCloud(object):
         )
         self._aliprinter = CrealityPrinter(plugin, self.lk)
         self._report_timer = PerpetualTimer(5, self.report_temperatures)
+        self._p2p_service_thread = None
+        self._video_service_thread = None
 
         self._p2p_service_thread = None
         self._video_service_thread = None
