@@ -20,45 +20,43 @@ class CrealityCloud(object):
         self._config = CreailtyConfig(plugin)
         self._video_started = False
         self.config_data = self._config.data()
-        self.connect_aliyun(
-            self.config_data["region"],
-            self.config_data["productKey"],
-            self.config_data["deviceName"],
-            self.config_data["deviceSecret"],
-        )
-        self._aliprinter = CrealityPrinter(plugin, self.lk)
+        self.connect_aliyun()
+        self._aliprinter = None
         self._report_timer = PerpetualTimer(5, self.report_temperatures)
         self._p2p_service_thread = None
         self._video_service_thread = None
 
         self._p2p_service_thread = None
         self._video_service_thread = None
+        self._iot_connected = False
 
-    def connect_aliyun(self, region, pk, dn, ds):
-        self.lk = linkkit.LinkKit(
-            host_name=self.region_to_string(region),
-            product_key=pk,
-            device_name=dn,
-            device_secret=ds,
-        )
-        # current_dir = os.path.dirname(os.path.abspath(__file__))
+    def connect_aliyun(self):
+        if self.config_data.get("region") is not None:
+            self.lk = linkkit.LinkKit(
+                host_name=self.region_to_string(self.config_data["region"]),
+                product_key=self.config_data["productKey"],
+                device_name=self.config_data["deviceName"],
+                device_secret=self.config_data["deviceSecret"],
+            )
+            # current_dir = os.path.dirname(os.path.abspath(__file__))
 
-        self.lk.enable_logger(logging.WARNING)
-        self.lk.on_device_dynamic_register = self.on_device_dynamic_register
-        self.lk.on_connect = self.on_connect
-        self.lk.on_disconnect = self.on_disconnect
-        self.lk.on_topic_message = self.on_topic_message
-        self.lk.on_subscribe_topic = self.on_subscribe_topic
-        self.lk.on_unsubscribe_topic = self.on_unsubscribe_topic
-        self.lk.on_publish_topic = self.on_publish_topic
-        self.lk.on_thing_prop_changed = self.on_thing_prop_changed
-        self.lk.on_thing_prop_post = self.on_thing_prop_post
-        self.lk.on_thing_raw_data_arrived = self.on_thing_raw_data_arrived
-        self.lk.on_thing_raw_data_arrived = self.on_thing_raw_data_arrived
-        # self.lk.on_thing_shadow_get = self.on_thing_shadow_get
-        self.lk.thing_setup()
-        self.lk.connect_async()
-        self.lk.start_worker_loop()
+            self.lk.enable_logger(logging.WARNING)
+            self.lk.on_device_dynamic_register = self.on_device_dynamic_register
+            self.lk.on_connect = self.on_connect
+            self.lk.on_disconnect = self.on_disconnect
+            self.lk.on_topic_message = self.on_topic_message
+            self.lk.on_subscribe_topic = self.on_subscribe_topic
+            self.lk.on_unsubscribe_topic = self.on_unsubscribe_topic
+            self.lk.on_publish_topic = self.on_publish_topic
+            self.lk.on_thing_prop_changed = self.on_thing_prop_changed
+            self.lk.on_thing_prop_post = self.on_thing_prop_post
+            self.lk.on_thing_raw_data_arrived = self.on_thing_raw_data_arrived
+            self.lk.on_thing_raw_data_arrived = self.on_thing_raw_data_arrived
+            self.lk.thing_setup()
+            self.lk.connect_async()
+            self.lk.start_worker_loop()
+
+            self._aliprinter = CrealityPrinter(self.plugin, self.lk)
 
     def region_to_string(self, num):
         regions = {0: "cn-shanghai", 1: "us-west-1", 2: "ap-southeast-1"}
@@ -100,10 +98,12 @@ class CrealityCloud(object):
 
     def on_connect(self, session_flag, rc, userdata):
         print("on_connect:%d,rc:%d" % (session_flag, rc))
+        self._iot_connected = True
         pass
 
     def on_disconnect(self, rc, userdata):
         print("on_disconnect:rc:%d,userdata:" % rc)
+        self._iot_connected = False
 
     def on_topic_message(self, topic, payload, qos, userdata):
         print(
@@ -138,7 +138,8 @@ class CrealityCloud(object):
             "APILicense": self._config.p2p_data().get("APILicense"),
             "DIDString": self._config.p2p_data().get("DIDString"),
         }
-        self.lk.thing_post_property(prop_data)
+        if self.lk is not None:
+            self.lk.thing_post_property(prop_data)
         if os.path.exists("/dev/video0"):
             self.start_video_service()
             self.start_p2p_service()
@@ -213,7 +214,8 @@ class CrealityCloud(object):
         self._aliprinter.printProgress = progress
 
     def report_temperatures(self):
-        self.lk.thing_get_shadow()
+        if _iot_connected is False:
+            return
         data = self._octoprinter.get_current_temperatures()
         if not data:
             self._logger.error("can't get temperatures")

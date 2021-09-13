@@ -5,7 +5,7 @@ import logging
 import threading
 import time
 import uuid
-
+import qrcode
 import octoprint.plugin
 from flask import jsonify, render_template, request
 from octoprint.events import Events
@@ -29,6 +29,7 @@ class CrealitycloudPlugin(
     octoprint.plugin.AssetPlugin,
     octoprint.plugin.ProgressPlugin,
     octoprint.plugin.EventHandlerPlugin,
+    octoprint.plugin.BlueprintPlugin
 ):
     def __init__(self):
         self._logger = logging.getLogger("octoprint.plugins.crealitycloud")
@@ -88,6 +89,20 @@ class CrealitycloudPlugin(
             }
         }
 
+    def get_template_configs(self):
+        return [
+            dict(type="settings", custom_bindings=True)
+        ]
+
+    def get_assets(self):
+        return dict(
+            js=["js/crealitycloud.js","js/qrcode.min.js"],
+            css=["css/crealitycloud.css"]
+        )
+
+    @octoprint.plugin.BlueprintPlugin.route("/machineqr",methods=["GET"])
+    def get_machine_short_id(self):
+        return {"code":"1234"}
 
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
 # ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
