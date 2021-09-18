@@ -7,54 +7,91 @@
 $(function() {
     function CrealitycloudViewModel(parameters) {
         var self = this;
-        self.disabled = ko.observable(true);
+        self.disabled = ko.observable(false);
+        self.isAcitived = ko.observable(false);
         self.WAIT_TIMEOUT = 180000;
         self.HAS_WAIT_TIMEOUT =0;
         // assign the injected parameters, e.g.:
         self.loginStateViewModel = parameters[0];
         self.settingsViewModel = parameters[1];
-
+        self.qrcode = new QRCode(document.getElementById("qrcode"), {
+            text: "",
+            width: 128,
+            height: 128,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
         // TODO: Implement your plugin's view model here.
         self.openCrealityCloud = function() {
             window.open("http://www.crealitycloud.com");
           };
-          self.onReflushQR = function() {
+          (function() {
             $.ajax({
-                type: "GET",
-                contentType: "application/json; charset=utf-8",
-                url: PLUGIN_BASEURL + "crealitycloud/machineqr",
-                data: {},
-                dataType: "json",
-                success: function(data) {
-                    self.makeQR(data.code);
-                    $("#idCode").html(data.code)
-                    //self.disabled(false);
-                    setTimeout("self.waitTimout", 1000)
-                }
-            }
-            )
-          }
+              type: "GET",
+              contentType: "application/json; charset=utf-8",
+              url: PLUGIN_BASEURL + "crealitycloud/status",
+              data: {},
+              dataType: "json",
+              success: function(data) {
+                if (data.actived == 1) {
+                    self.isAcitived(true);
+                  }else{
+                    self.isAcitived(false);  
+                  }
+              }
+            })
+        })();
+          
           self.waitTimout = function()
           {
+                $.ajax({
+                    type: "GET",
+                    contentType: "application/json; charset=utf-8",
+                    url: PLUGIN_BASEURL + "crealitycloud/machineqr",
+                    data: {},
+                    dataType: "json",
+                    success: function(data) {   
+                        if(data.code!="0")
+                        {
+                            self.makeQR(data.code);
+                            $("#idCode").html(data.code)
+                            self.disabled(true);
+                        }
+                        
+                    }
+                }
+                )
+                
                 if(self.HAS_WAIT_TIMEOUT<self.WAIT_TIMEOUT)
                 {
                     self.HAS_WAIT_TIMEOUT++;
-                    setTimeout("self.waitTimout", 1000)
-                    $("#bindCrealityCloud").text = "reflush after "+(self.WAIT_TIMEOUT-self.HAS_WAIT_TIMEOUT)+"s"
+                    setTimeout(function(){self.waitTimout();}, 3000)
+                    $("#bindCrealityCloud").html( "reflush after "+(self.WAIT_TIMEOUT-self.HAS_WAIT_TIMEOUT)+"s")
                 }else{
                     self.HAS_WAIT_TIMEOUT=0;
                 }
           }
+          self.onReflushQR = function() {
+            $.ajax({
+                type: "GET",
+                contentType: "application/json; charset=utf-8",
+                url: PLUGIN_BASEURL + "crealitycloud/makeQR",
+                data: {},
+                dataType: "json",
+                success: function(data) {
+                    
+                    //self.disabled(false);
+                    self.waitTimout()
+                }
+            }
+            )
+          }
+          
           self.makeQR = function(code)
           {
-            var qrcode = new QRCode(document.getElementById("qrcode"), {
-                text: code,
-                width: 128,
-                height: 128,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
+            self.qrcode.clear(); // clear the code.
+            self.qrcode.makeCode(code); 
           }
           self.bind = function() {
             self.onReflushQR();

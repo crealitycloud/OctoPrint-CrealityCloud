@@ -1,5 +1,11 @@
+<div class="container_fluid" id="bindPage" data-bind="visible: isAcitived()">
+Machine has actived. 
+</div>
+<div data-bind="visible: !isAcitived()">
 <div id="qrcode"></div>
-<div class="btn_bind">
+<div id="idCode"></div>
+<div id="bindCrealityCloud"></div>
+<div class="btn_bind" data-bind="disabled: disabled()">
               <button
                 id="bindCrealityCloud"
                 data-bind="click:bind"
@@ -7,5 +13,6 @@
                 Create bind code
               </button>
 </div>
-<div id="idCode"></div>
 <div>please use app scan the code</div>
+</div>
+

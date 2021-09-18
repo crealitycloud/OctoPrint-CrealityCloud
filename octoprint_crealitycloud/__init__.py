@@ -2,10 +2,11 @@
 from __future__ import absolute_import
 
 import logging
+import os
 import threading
 import time
 import uuid
-import qrcode
+
 import octoprint.plugin
 from flask import jsonify, render_template, request
 from octoprint.events import Events
@@ -29,16 +30,17 @@ class CrealitycloudPlugin(
     octoprint.plugin.AssetPlugin,
     octoprint.plugin.ProgressPlugin,
     octoprint.plugin.EventHandlerPlugin,
-    octoprint.plugin.BlueprintPlugin
+    octoprint.plugin.BlueprintPlugin,
 ):
     def __init__(self):
         self._logger = logging.getLogger("octoprint.plugins.crealitycloud")
         self._logger.info(
             "-------------------------------creality cloud init!------------------"
         )
+        self.short_code = None
 
     def initialize(self):
-        self.crealitycloud = CrealityCloud(self)
+        self._crealitycloud = CrealityCloud(self)
 
     def get_settings_defaults(self):
         return {
@@ -61,15 +63,15 @@ class CrealitycloudPlugin(
         self._logger.info(
             "-------------------------------creality cloud stared!------------------"
         )
-        self.crealitycloud.on_start()
+        self._crealitycloud.on_start()
 
     def on_event(self, event, payload):
-        self.crealitycloud.on_event(event, payload)
+        self._crealitycloud.on_event(event, payload)
 
     ##~~ Softwareupdate hook
-    def on_print_progress(self,storage, path, progress):
+    def on_print_progress(self, storage, path, progress):
         print(storage)
-        self.crealitycloud.on_progress(storage,progress)
+        self._crealitycloud.on_progress(storage, progress)
 
     def get_update_information(self):
         # Define the configuration for your plugin to use with the Software Update
@@ -90,19 +92,38 @@ class CrealitycloudPlugin(
         }
 
     def get_template_configs(self):
-        return [
-            dict(type="settings", custom_bindings=True)
-        ]
+        return [dict(type="settings", custom_bindings=True)]
 
     def get_assets(self):
         return dict(
-            js=["js/crealitycloud.js","js/qrcode.min.js"],
-            css=["css/crealitycloud.css"]
+            js=["js/crealitycloud.js", "js/qrcode.min.js"], css=["css/crealitycloud.css"]
         )
 
-    @octoprint.plugin.BlueprintPlugin.route("/machineqr",methods=["GET"])
+    @octoprint.plugin.BlueprintPlugin.route("/makeQR", methods=["GET"])
+    def make_qr(self):
+        if os.path.exists(self.get_plugin_data_folder() + "/code"):
+            os.remove(self.get_plugin_data_folder() + "/code")
+        self._crealitycloud.start_active_service()
+        return {"code": 0}
+
+    @octoprint.plugin.BlueprintPlugin.route("/machineqr", methods=["GET"])
     def get_machine_short_id(self):
-        return {"code":"1234"}
+        code_path = self.get_plugin_data_folder() + "/code"
+        if os.path.exists(code_path):
+            with open(code_path, "r") as f:
+                self.short_code = f.readline()
+                f.close()
+                return {"code": self.short_code}
+        else:
+            return {"code": "0"}
+
+    @octoprint.plugin.BlueprintPlugin.route("/status", methods=["GET"])
+    def get_status(self):
+        if os.path.exists(self.get_plugin_data_folder() + "/config.json"):
+            return {"actived": 1}
+        else:
+            return {"actived": 0}
+
 
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
 # ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that

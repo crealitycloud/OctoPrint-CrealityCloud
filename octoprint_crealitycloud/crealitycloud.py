@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 import subprocess
 import threading
 
@@ -28,6 +29,7 @@ class CrealityCloud(object):
 
         self._p2p_service_thread = None
         self._video_service_thread = None
+        self._active_service_thread = None
         self._iot_connected = False
 
     def connect_aliyun(self):
@@ -235,6 +237,25 @@ class CrealityCloud(object):
             )
         # self._report_timer.start()
         # self._aliprinter.nozzleTemp2 =2
+    def start_active_service(self):
+        env = os.environ.copy()
+        env["HOME_LOG"] = self.plugin.get_plugin_data_folder()
+        env["OCTO_DATA_DIR"] = self.plugin.get_plugin_data_folder()
+        importcode_path = (
+            os.path.dirname(os.path.abspath(__file__)) + "/bin/importcode.sh"
+        )
+        dest_importcode_path = (
+            self.plugin.get_plugin_data_folder() + "/importcode.sh"
+        )
+        if os.path.exists(dest_importcode_path):
+            os.remove(dest_importcode_path)
+        os.system("cp "+importcode_path+ " "+dest_importcode_path)
+        active_service_path = (
+            os.path.dirname(os.path.abspath(__file__)) + "/bin/active_server.sh"
+        )
+        self._active_service_thread = threading.Thread(
+                target=self._runcmd, args=(["/bin/bash", active_service_path], env)
+            )
 
     def start_p2p_service(self):
         if self._p2p_service_thread is not None:
