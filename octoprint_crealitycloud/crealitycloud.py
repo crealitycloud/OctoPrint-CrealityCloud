@@ -31,6 +31,7 @@ class CrealityCloud(object):
         self._video_service_thread = None
         self._active_service_thread = None
         self._iot_connected = False
+        self.lk = None
 
     def connect_aliyun(self):
         if self.config_data.get("region") is not None:
@@ -142,12 +143,12 @@ class CrealityCloud(object):
         }
         if self.lk is not None:
             self.lk.thing_post_property(prop_data)
-        if os.path.exists("/dev/video0"):
-            self.start_video_service()
-            self.start_p2p_service()
-            self._aliprinter.video = 1
-        else:
-            self._aliprinter.video = 0
+            if os.path.exists("/dev/video0"):
+                self.start_video_service()
+                self.start_p2p_service()
+                self._aliprinter.video = 1
+            else:
+                self._aliprinter.video = 0
 
     def on_event(self, event, payload):
         if event == Events.FIRMWARE_DATA:
@@ -238,6 +239,8 @@ class CrealityCloud(object):
         # self._report_timer.start()
         # self._aliprinter.nozzleTemp2 =2
     def start_active_service(self):
+        if self._active_service_thread is not None:
+            self._active_server_thread.cancel()
         env = os.environ.copy()
         env["HOME_LOG"] = self.plugin.get_plugin_data_folder()
         env["OCTO_DATA_DIR"] = self.plugin.get_plugin_data_folder()
@@ -256,6 +259,7 @@ class CrealityCloud(object):
         self._active_service_thread = threading.Thread(
                 target=self._runcmd, args=(["/bin/bash", active_service_path], env)
             )
+        self._active_service_thread.start()
 
     def start_p2p_service(self):
         if self._p2p_service_thread is not None:
@@ -292,7 +296,7 @@ class CrealityCloud(object):
     def _runcmd(self, command, env):
         popen = subprocess.Popen(command, env=env)
         return_code = popen.wait()
-        if return_code == 0:
-            self._logger.info("_runcmd success:", return_code)
-        else:
-            self._logger.error("_runcmd error:", return_code)
+        #if return_code == 0:
+        #    self._logger.info("_runcmd success:", return_code)
+        #else:
+        #    self._logger.error("_runcmd error:", return_code)

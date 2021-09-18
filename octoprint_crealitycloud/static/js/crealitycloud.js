@@ -9,7 +9,7 @@ $(function() {
         var self = this;
         self.disabled = ko.observable(false);
         self.isAcitived = ko.observable(false);
-        self.WAIT_TIMEOUT = 180000;
+        self.WAIT_TIMEOUT = 180;
         self.HAS_WAIT_TIMEOUT =0;
         // assign the injected parameters, e.g.:
         self.loginStateViewModel = parameters[0];
@@ -65,7 +65,7 @@ $(function() {
                 
                 if(self.HAS_WAIT_TIMEOUT<self.WAIT_TIMEOUT)
                 {
-                    self.HAS_WAIT_TIMEOUT++;
+                    self.HAS_WAIT_TIMEOUT = self.HAS_WAIT_TIMEOUT+3;
                     setTimeout(function(){self.waitTimout();}, 3000)
                     $("#bindCrealityCloud").html( "reflush after "+(self.WAIT_TIMEOUT-self.HAS_WAIT_TIMEOUT)+"s")
                 }else{
