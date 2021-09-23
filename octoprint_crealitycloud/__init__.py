@@ -119,10 +119,15 @@ class CrealitycloudPlugin(
 
     @octoprint.plugin.BlueprintPlugin.route("/status", methods=["GET"])
     def get_status(self):
+
         if os.path.exists(self.get_plugin_data_folder() + "/config.json"):
-            return {"actived": 1}
+            if not self._crealitycloud.iot_connected:
+                if self._printer.is_operational():
+                    self._logger.info("start iot server")
+                    self._crealitycloud.device_start()
+            return {"actived": 1,"iot":self._crealitycloud.iot_connected,"printer":self._printer.is_operational()}
         else:
-            return {"actived": 0}
+            return {"actived": 0,"iot":False,"printer":False}
 
 
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py

@@ -34,7 +34,6 @@ class ErrorCode(Enum):
 
 class CrealityPrinter(object):
     def __init__(self, plugin, lk):
-        self._print = None
         self.__linkkit = lk
         self.plugin = plugin
         self._logger = logging.getLogger("octoprint.plugins.crealityprinter")
@@ -299,7 +298,12 @@ class CrealityPrinter(object):
 
     @fan.setter
     def fan(self, v):
-        self._fan = v
+        self._fan = int(v)
+        if self._fan == 1:
+            self.printer.commands(["M106"])
+        else:
+            self.printer.commands(["M107"])
+        self._upload_data({"fan":self._fan})
 
     @property
     def curFeedratePct(self):

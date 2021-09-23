@@ -26,7 +26,7 @@ $(function() {
         self.openCrealityCloud = function() {
             window.open("http://www.crealitycloud.com");
           };
-          (function() {
+        self.getStatus = function() {
             $.ajax({
               type: "GET",
               contentType: "application/json; charset=utf-8",
@@ -36,12 +36,15 @@ $(function() {
               success: function(data) {
                 if (data.actived == 1) {
                     self.isAcitived(true);
+		    self.HAS_WAIT_TIMEOUT=self.WAIT_TIMEOUT
                   }else{
                     self.isAcitived(false);  
                   }
               }
             })
-        })();
+        };
+
+	self.getStatus();
           
           self.waitTimout = function()
           {
@@ -57,6 +60,7 @@ $(function() {
                             self.makeQR(data.code);
                             $("#idCode").html(data.code)
                             self.disabled(true);
+			    self.getStatus()
                         }
                         
                     }
@@ -80,7 +84,7 @@ $(function() {
                 data: {},
                 dataType: "json",
                 success: function(data) {
-                    
+                    self.HAS_WAIT_TIMEOUT=0
                     //self.disabled(false);
                     self.waitTimout()
                 }

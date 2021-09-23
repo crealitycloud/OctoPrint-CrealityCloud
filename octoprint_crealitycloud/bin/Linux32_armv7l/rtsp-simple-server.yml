@@ -124,7 +124,7 @@ hlsAllowOrigin: '*'
 # another entry.
 paths:
   ch0_0:
-    runOnInit: ffmpeg -y -i /dev/video0 -s 640x480 -loglevel quiet -b:v 8000K  -tune zerolatency -vcodec h264_omx -preset veryfast -f rtsp rtsp://127.0.0.1:8554/ch0_0
+    runOnInit: /usr/bin/ffmpeg -y -i /dev/video0 -s 640x480 -loglevel quiet -b:v 8000K  -tune zerolatency -vcodec h264_omx -preset veryfast -f rtsp rtsp://127.0.0.1:8554/ch0_0
     runOnInitRestart: yes
   all:
     # source of the stream - this can be:
