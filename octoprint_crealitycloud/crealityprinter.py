@@ -356,21 +356,23 @@ class CrealityPrinter(object):
         self._logger.info(
             "Downloading new file, name: {}, free space: {}".format(new_filename, free)
         )
-
+        new_filename = os.path.basename(download_url)
         # response.content currently contains the file's content in memory, now write it to a temporary file
         temp_dir = tempfile.gettempdir()
         temp_path = os.path.join(
             temp_dir, "crealitycloud-file-upload-{}".format(new_filename)
         )
 
-        self.download(download_url, temp_path)
-        gfile = gzip.GzipFile(temp_path)
-        gcode_file = temp_path + ".gcode"
-        open(gcode_file, "wb+").write(gfile.read())
-        gfile.close()
-        os.remove(temp_path)
+        gcode_file = os.path.join(temp_dir ,os.path.splitext(new_filename)[0])
+        
+        if os.path.exists(gcode_file)==False:
+            self.download(download_url, temp_path)
+            gfile = gzip.GzipFile(temp_path)
+            open(gcode_file, "wb+").write(gfile.read())
+            gfile.close()
+            os.remove(temp_path)
         self._logger.info("Copying file to filemanager:" + gcode_file)
-        upload = DiskFileWrapper(new_filename + ".gcode", gcode_file)
+        upload = DiskFileWrapper(os.path.splitext(new_filename)[0], gcode_file)
 
         try:
             canon_path, canon_filename = self.plugin._file_manager.canonicalize(
