@@ -27,13 +27,13 @@ plugin_author = "hemiao"
 plugin_author_email = "hemiao@creality.com"
 
 # The plugin's homepage URL. Can be overwritten within OctoPrint's internal data via __plugin_url__ in the plugin module
-plugin_url = "https://github.com/hemiao218/OctoPrint-Crealitycloud"
+plugin_url = "https://github.com/crealitycloud/OctoPrint-Crealitycloud"
 
 # The plugin's license. Can be overwritten within OctoPrint's internal data via __plugin_license__ in the plugin module
 plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
-plugin_requires = ['qrcode==7.3', 'aliyun-iot-linkkit==1.2.3']
+plugin_requires = ['OctoPrint>1.3.8', 'aliyun-iot-linkkit==1.2.3','DisplayLayerProgress>=1.26.0','Creality_2x_temperature_reporting_fix==0.0.4']
 
 ### --------------------------------------------------------------------------------------------------------------------
 ### More advanced options that you usually shouldn't have to touch follow after this point
@@ -43,7 +43,7 @@ plugin_requires = ['qrcode==7.3', 'aliyun-iot-linkkit==1.2.3']
 # already be installed automatically if they exist. Note that if you add something here you'll also need to update
 # MANIFEST.in to match to ensure that python setup.py sdist produces a source distribution that contains all your
 # files. This is sadly due to how python's setup.py works, see also http://stackoverflow.com/a/14159430/2028598
-plugin_additional_data = []
+plugin_additional_data = ['bin']
 
 # Any additional python packages you need to install with your plugin that are not contained in <plugin_package>.*
 plugin_additional_packages = []
