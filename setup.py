@@ -14,7 +14,7 @@ plugin_package = "octoprint_crealitycloud"
 plugin_name = "OctoPrint-Crealitycloud"
 
 # The plugin's version. Can be overwritten within OctoPrint's internal data via __plugin_version__ in the plugin module
-plugin_version = "0.1.0"
+plugin_version = "0.1.1"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # module
@@ -33,7 +33,7 @@ plugin_url = "https://github.com/crealitycloud/OctoPrint-Crealitycloud"
 plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
-plugin_requires = ['OctoPrint>1.3.8', 'aliyun-iot-linkkit==1.2.3','DisplayLayerProgress>=1.26.0','Creality_2x_temperature_reporting_fix==0.0.4']
+plugin_requires = ['OctoPrint>1.3.8', 'aliyun-iot-linkkit==1.2.3','DisplayLayerProgress==1.26.0','Creality_2x_temperature_reporting_fix==0.0.4']
 
 ### --------------------------------------------------------------------------------------------------------------------
 ### More advanced options that you usually shouldn't have to touch follow after this point
@@ -59,7 +59,8 @@ plugin_ignored_packages = []
 # Example:
 #     plugin_requires = ["someDependency==dev"]
 #     additional_setup_parameters = {"dependency_links": ["https://github.com/someUser/someRepo/archive/master.zip#egg=someDependency-dev"]}
-additional_setup_parameters = {}
+additional_setup_parameters = {"dependency_links": ["https://github.com/OllisGit/OctoPrint-DisplayLayerProgress/releases/latest/download/master.zip#egg=DisplayLayerProgress-1.26.0",
+                                                   "https://github.com/SimplyPrint/OctoPrint-Creality2xTemperatureReportingFix/archive/master.zip#egg=Creality_2x_temperature_reporting_fix-0.0.4"]}
 
 ########################################################################################################################
 
