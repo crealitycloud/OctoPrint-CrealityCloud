@@ -265,7 +265,7 @@ class CrealityCloud(object):
         # self._aliprinter.nozzleTemp2 =2
     def start_active_service(self):
         if self._active_service_thread is not None:
-            self._active_server_thread.cancel()
+            self._active_service_thread = None
         env = os.environ.copy()
         env["HOME_LOG"] = self.plugin.get_plugin_data_folder()
         env["OCTO_DATA_DIR"] = self.plugin.get_plugin_data_folder()
@@ -288,7 +288,7 @@ class CrealityCloud(object):
 
     def start_p2p_service(self):
         if self._p2p_service_thread is not None:
-            self._p2p_service_thread.cancel()
+            self._p2p_service_thread = None
         p2p_service_path = (
             os.path.dirname(os.path.abspath(__file__)) + "/bin/p2p_server.sh"
         )
@@ -309,7 +309,7 @@ class CrealityCloud(object):
 
     def start_video_service(self):
         if self._video_service_thread is not None:
-            self._video_service_thread.cancel()
+            self._video_service_thread = None
         video_service_path = (
             os.path.dirname(os.path.abspath(__file__)) + "/bin/rtsp_server.sh"
         )
