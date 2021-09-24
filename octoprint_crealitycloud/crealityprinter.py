@@ -290,7 +290,8 @@ class CrealityPrinter(object):
     def DIDString(self, v):
         self._DIDString = v
         self._config.save_p2p_config("DIDString", v)
-        self._upload_data({"DIDString": self._DIDString})
+        self._upload_data({"DIDString": self._DIDString}) 
+        eventManager().fire("CrealityCloud-Video", {})
 
     @property
     def fan(self):

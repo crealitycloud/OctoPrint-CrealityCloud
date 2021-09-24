@@ -20,7 +20,7 @@ class CrealityCloud(object):
         self._octoprinter = plugin._printer
         self._config = CreailtyConfig(plugin)
         self._video_started = False
-        self.config_data = self._config.data()
+        #self.config_data = self._config.data()
         self._aliprinter = None
         self._report_timer = PerpetualTimer(5, self.report_temperatures)
         self._p2p_service_thread = None
@@ -39,6 +39,7 @@ class CrealityCloud(object):
 
     def connect_aliyun(self):
         self._logger.info("start connect aliyun");
+        self.config_data = self._config.data()
         if self.config_data.get("region") is not None:
             self.lk = linkkit.LinkKit(
                 host_name=self.region_to_string(self.config_data["region"]),
@@ -145,18 +146,21 @@ class CrealityCloud(object):
     def on_start(self):
         self._logger.info("plugin started")
     def video_start(self):
-        if self._config.p2p_data().get("InitString") is None:
-            return
+        initString = self._config.p2p_data().get("InitString")
+        didString = self._config.p2p_data().get("DIDString")
+        apiLicense = self._config.p2p_data().get("APILicense")
         prop_data = {
-            "InitString": self._config.p2p_data().get("InitString"),
-            "DIDString": self._config.p2p_data().get("DIDString"),
-            "APILicense": self._config.p2p_data().get("APILicense")
+            "InitString": initString if initString is not None else "",
+            "DIDString": didString if didString is not None else "",
+            "APILicense": apiLicense if apiLicense is not None else ""
             }
-
+        
+        self.lk.thing_post_property(prop_data)
+        if initString is None:
+            return
         self.start_video_service()
         time.sleep(2) #wait video process started
         self.start_p2p_service()
-        self.lk.thing_post_property(prop_data)
         self._logger.info("video service started")
 
     def device_start(self):
@@ -192,7 +196,8 @@ class CrealityCloud(object):
 
         if event == "DisplayLayerProgress_layerChanged":
             self._aliprinter.layer = int(payload["currentLayer"])
-
+        if event == "CrealityCloud-Video": 
+            self.video_start()
         if event == Events.PRINT_FAILED:
             if self._aliprinter.stop==0:
                 self._aliprinter.state = 3

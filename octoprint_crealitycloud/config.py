@@ -15,6 +15,9 @@ class CreailtyConfig(object):
         self._logger.debug(self._path)
         self._p2pdata = {}
         self._data = {}
+        self.load()
+
+    def load(self):
         if os.path.exists(self._path):
             with open(self._path, "r") as f:
                 self._data = json.load(f)
@@ -25,9 +28,11 @@ class CreailtyConfig(object):
                 f.close()
 
     def data(self):
+        self.load()
         return self._data
 
     def p2p_data(self):
+        self.load()
         return self._p2pdata
 
     def save(self, key, val):
