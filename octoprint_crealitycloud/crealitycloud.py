@@ -173,6 +173,7 @@ class CrealityCloud(object):
             self._aliprinter.state = 0
             self._aliprinter.printId = ""
             self._aliprinter.connect = 1
+            self._aliprinter.tfCard = 1
             self._report_timer.start()
         else:
             self.connect_aliyun()
