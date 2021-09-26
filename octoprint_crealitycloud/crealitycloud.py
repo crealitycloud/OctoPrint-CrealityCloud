@@ -69,7 +69,7 @@ class CrealityCloud(object):
             self._aliprinter = CrealityPrinter(self.plugin, self.lk)
 
     def region_to_string(self, num):
-        regions = {0: "cn-shanghai", 1: "us-west-1", 2: "ap-southeast-1"}
+        regions = {0: "cn-shanghai", 1: "ap-southeast-1", 2: "ap-northeast-1",3: "us-west-1",4: "eu-central-1",5: "us-east-1"}
         return regions.get(num)
 
     def on_thing_shadow_get(self, payload, userdata):
