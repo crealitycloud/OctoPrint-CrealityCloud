@@ -20,12 +20,18 @@ class CreailtyConfig(object):
     def load(self):
         if os.path.exists(self._path):
             with open(self._path, "r") as f:
-                self._data = json.load(f)
-                f.close()
+                try:
+                    self._data = json.load(f)
+                    f.close()
+                except:
+                    os.remove(self._path)
         if os.path.exists(self._p2p_path):
             with open(self._p2p_path, "r") as f:
-                self._p2pdata = json.load(f)
-                f.close()
+                try:
+                    self._p2pdata = json.load(f)
+                    f.close()
+                except:
+                    os.remove(self._p2p_path)
 
     def data(self):
         self.load()

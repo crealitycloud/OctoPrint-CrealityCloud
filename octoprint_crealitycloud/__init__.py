@@ -13,6 +13,7 @@ from octoprint.events import Events
 from octoprint.server import admin_permission
 
 from .crealitycloud import CrealityCloud
+from .cxhttp import CrealityAPI
 
 ### (Don't forget to remove me)
 # This is a basic skeleton for your plugin's __init__.py. You probably want to adjust the class name of your plugin
@@ -38,9 +39,12 @@ class CrealitycloudPlugin(
             "-------------------------------creality cloud init!------------------"
         )
         self.short_code = None
+        self._addr = None
 
     def initialize(self):
         self._crealitycloud = CrealityCloud(self)
+        self._cxapi = CrealityAPI()
+        self._addr = self._cxapi.getAddrress()
 
     def get_settings_defaults(self):
         return {
@@ -99,11 +103,12 @@ class CrealitycloudPlugin(
             js=["js/crealitycloud.js", "js/qrcode.min.js"], css=["css/crealitycloud.css"]
         )
 
-    @octoprint.plugin.BlueprintPlugin.route("/makeQR", methods=["GET"])
+    @octoprint.plugin.BlueprintPlugin.route("/makeQR", methods=["GET", "POST"])
     def make_qr(self):
         if os.path.exists(self.get_plugin_data_folder() + "/code"):
             os.remove(self.get_plugin_data_folder() + "/code")
-        self._crealitycloud.start_active_service()
+        country = request.json["country"]
+        # self._crealitycloud.start_active_service(country)
         return {"code": 0}
 
     @octoprint.plugin.BlueprintPlugin.route("/machineqr", methods=["GET"])
@@ -119,14 +124,22 @@ class CrealitycloudPlugin(
 
     @octoprint.plugin.BlueprintPlugin.route("/status", methods=["GET"])
     def get_status(self):
-
+        country = self._addr[1]
         if os.path.exists(self.get_plugin_data_folder() + "/config.json"):
             if not self._crealitycloud.iot_connected:
                 self._logger.info("start iot server")
+                os.system("/usr/bin/sync")
                 self._crealitycloud.device_start()
-            return {"actived": 1,"iot":self._crealitycloud.iot_connected,"printer":self._printer.is_operational()}
+                if self._crealitycloud.get_server_region() is not None:
+                    country = self._crealitycloud.get_server_region()
+            return {
+                "actived": 1,
+                "iot": self._crealitycloud.iot_connected,
+                "printer": self._printer.is_operational(),
+                "country": country,
+            }
         else:
-            return {"actived": 0,"iot":False,"printer":False}
+            return {"actived": 0, "iot": False, "printer": False, "country": country}
 
 
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py

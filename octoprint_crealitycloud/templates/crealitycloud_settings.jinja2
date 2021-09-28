@@ -1,22 +1,27 @@
-<div class="container_fluid" id="bindPage" data-bind="visible: isAcitived()">
-Machine has actived. 
+<div class="container_fluid" id="bindPage" data-bind="text:activedMsg,visible: isAcitived()">
 </div>
 <div data-bind="visible: !isAcitived()">
-
-<div><a href="https://www.crealitycloud.com/" target="view_window">1. download crealitycloud app</a></div>
+<span>
+  Server location
+  <select id="region" data-bind="event:{change:changeRegion}">
+    <option value ="US">US</option>
+    <option value ="China">China</option>
+  </select>
+</span>
+<div><a target="view_window" data-bind="attr:{href:appdownloadUrl}">Download crealitycloud app</a></div>
 <br>
 <div class="btn_bind" data-bind="visible: !disabled()">
               <button
                 id="bindbtn"
                 data-bind="click:bind"
               >
-                2. click here get bind code
+                Click here get bind code
               </button>
 </div>
 
 <div id="qrcode"></div>
 <div id="idCode"></div>
 <div id="bindCrealityCloud"></div>
-<div>3. please use crealitycloud app scan the qrcode or manual input code</div>
+<div data-bind="visible: disabled()">Please use crealitycloud app scan the qrcode or manual input code</div>
 </div>
 
