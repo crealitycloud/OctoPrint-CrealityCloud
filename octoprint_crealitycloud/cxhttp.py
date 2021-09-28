@@ -26,10 +26,20 @@ class CrealityAPI(object):
         r = random.random() % (99999 - 10000) + 10000
         return "Raspberry" + str(time.tm_sec) + str(10) + str(r)  # time.tvm_usec
 
-    def getAddrress(self):
+    def getAddrress1(self):
         url = self.__homeurl + "/api/cxy/v2/common/getAddrress"
-        response = requests.post(url, data="{}", headers=self.__headers).text
+        response = requests.post(url, data="{}", headers=self.__headers, timeout=2).text
         res = json.loads(response)
         if res["code"] == 0:
             if res["result"]["apiUrl"] != None:
                 return (res["result"]["apiUrl"], res["result"]["country"])
+        return ("", "US")
+
+    def getAddrress2(self):
+        url = self.__overseaurl + "/api/cxy/v2/common/getAddrress"
+        response = requests.post(url, data="{}", headers=self.__headers, timeout=2).text
+        res = json.loads(response)
+        if res["code"] == 0:
+            if res["result"]["apiUrl"] != None:
+                return (res["result"]["apiUrl"], res["result"]["country"])
+        return ("", "US")

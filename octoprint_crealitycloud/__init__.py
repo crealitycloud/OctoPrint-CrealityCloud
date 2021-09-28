@@ -44,7 +44,13 @@ class CrealitycloudPlugin(
     def initialize(self):
         self._crealitycloud = CrealityCloud(self)
         self._cxapi = CrealityAPI()
-        self._addr = self._cxapi.getAddrress()
+        try:
+            self._addr = self._cxapi.getAddrress1()
+        except:
+            try:
+                self._addr = self._cxapi.getAddrress2()
+            except:
+                self._addr = ("", "US")
 
     def get_settings_defaults(self):
         return {
@@ -108,7 +114,7 @@ class CrealitycloudPlugin(
         if os.path.exists(self.get_plugin_data_folder() + "/code"):
             os.remove(self.get_plugin_data_folder() + "/code")
         country = request.json["country"]
-        # self._crealitycloud.start_active_service(country)
+        self._crealitycloud.start_active_service(country)
         return {"code": 0}
 
     @octoprint.plugin.BlueprintPlugin.route("/machineqr", methods=["GET"])
