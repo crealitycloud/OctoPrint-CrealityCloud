@@ -211,7 +211,7 @@ class CrealityCloud(object):
                 machine_type = payload["data"]["MACHINE_TYPE"]
                 if self.lk is not None:
                     self._aliprinter.model = machine_type
-                    self._aliprinter.boxVersion = "octo_v1.01b1"
+                    self._aliprinter.boxVersion = "rasp_v1.01b1"
 
         if event == "DisplayLayerProgress_layerChanged":
             self._aliprinter.layer = int(payload["currentLayer"])
