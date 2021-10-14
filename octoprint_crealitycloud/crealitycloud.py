@@ -205,13 +205,18 @@ class CrealityCloud(object):
             return
 
         # self._logger.info("event=="+event+"==")
-
+        if event == "Startup":
+             self._aliprinter.boxVersion = "rasp_v1.01b1"
+             self._aliprinter.connect = 0
+             if os.path.exists("/dev/video0"):
+                self._aliprinter.video = 1
+                
         if event == Events.FIRMWARE_DATA:
             if "MACHINE_TYPE" in payload["data"]:
                 machine_type = payload["data"]["MACHINE_TYPE"]
                 if self.lk is not None:
                     self._aliprinter.model = machine_type
-                    self._aliprinter.boxVersion = "rasp_v1.01b1"
+                   
 
         if event == "DisplayLayerProgress_layerChanged":
             self._aliprinter.layer = int(payload["currentLayer"])
