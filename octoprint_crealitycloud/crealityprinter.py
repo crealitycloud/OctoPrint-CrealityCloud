@@ -8,12 +8,13 @@ import uuid
 from contextlib import closing
 from enum import Enum
 
-import octoprint.plugin
-import octoprint.util
 import psutil
 import requests
-from octoprint.events import Events, eventManager
 from paho.mqtt.client import DISCONNECT
+
+import octoprint.plugin
+import octoprint.util
+from octoprint.events import Events, eventManager
 
 from .config import CreailtyConfig
 
@@ -46,8 +47,12 @@ class CrealityPrinter(object):
         self._stop = 0
         self._status = 0
         self._pause = 0
-        self._nozzleTemp2 = 0
-        self._bedTemp2 = 0
+        self._nozzleTemp2 = -1
+        self._bedTemp2 = -1
+        self._xcoordinate = None
+        self._ycoordinate = None
+        self._zcoordinate = None
+        self._position = None
         self._APILicense = None
         self._initString = None
         self._DIDString = None
@@ -109,7 +114,20 @@ class CrealityPrinter(object):
         if self._ReqPrinterPara == 0:
             self._upload_data({"curFeedratePct": 0})
         if self._ReqPrinterPara == 1:
-            self._upload_data({"curPosition": "X0.00 Y0.00 Z:0.00"})
+            self.printer.commands(["M114"])
+            print("---------------send M114 success---------------")
+            self._upload_data({"curPosition": self._position})
+            print("-----upload succcess-----")
+
+    @property
+    def gcodeCmd(self):
+        return self._gcodeCmd
+
+    @gcodeCmd.setter
+    def gcodeCmd(self,v):
+        self._gcodeCmd = v
+        if v is not None:
+            self.printer.commands([v])
 
     @property
     def state(self):
