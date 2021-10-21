@@ -247,7 +247,7 @@ class CrealityCloud(object):
         if event == Events.PRINT_DONE:
             self._aliprinter.state = 0
 
-        #获取[M114]有效载荷
+        #get M114 payload
         if event == Events.POSITION_UPDATE:
             self._aliprinter._xcoordinate = payload["x"]
             self._aliprinter._ycoordinate = payload["y"]
