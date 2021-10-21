@@ -6,7 +6,6 @@ import threading
 import time
 
 from linkkit import linkkit
-
 from octoprint.events import Events
 
 from .config import CreailtyConfig
