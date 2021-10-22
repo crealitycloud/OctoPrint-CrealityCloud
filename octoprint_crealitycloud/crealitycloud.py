@@ -214,8 +214,8 @@ class CrealityCloud(object):
         if event == Events.FIRMWARE_DATA:
             if "MACHINE_TYPE" in payload["data"]:
                 machine_type = payload["data"]["MACHINE_TYPE"]
-                if self.lk is not None:
-                    self._aliprinter.model = machine_type
+                #if self.lk is not None:
+                    #self._aliprinter.model = machine_type
                    
 
         if event == "DisplayLayerProgress_layerChanged":
@@ -257,6 +257,10 @@ class CrealityCloud(object):
                 " Y:"+str(payload["y"])+\
                 " Z:"+str(payload["z"])
         
+        #get local ip address
+        if event == Events.CONNECTIVITY_CHANGED:
+            if payload["new"] == True:
+                self._aliprinter.ipAddress
             
         # if event == Events.UPLOAD:
         #    if payload["app"] is True:

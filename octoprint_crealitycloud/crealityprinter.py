@@ -1,6 +1,7 @@
 import gzip
 import logging
 import os
+import socket
 import tempfile
 import threading
 import time
@@ -108,6 +109,7 @@ class CrealityPrinter(object):
     def ReqPrinterPara(self):
         return self._ReqPrinterPara
 
+    #get Position and Feedrate data
     @ReqPrinterPara.setter
     def ReqPrinterPara(self, v):
         self._ReqPrinterPara = int(v)
@@ -117,6 +119,21 @@ class CrealityPrinter(object):
             self.printer.commands(["M114"])
             self._upload_data({"curPosition": self._position})
 
+    #get local ip address
+    @property
+    def ipAddress(self):
+        try: 
+            s = socket.socket(socket.AF_INET,socket.SOCK_DGRAM) 
+            s.connect(('8.8.8.8',80)) 
+            ip = s.getsockname()[0] 
+        finally: 
+            s.close()
+            print (ip)
+            self._model = ip##########
+            self._upload_data({"model": ip})##########
+            return ip
+    
+    #sent gCode
     @property
     def gcodeCmd(self):
         return self._gcodeCmd
