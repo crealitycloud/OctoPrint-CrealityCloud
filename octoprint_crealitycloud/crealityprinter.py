@@ -129,8 +129,7 @@ class CrealityPrinter(object):
         finally: 
             s.close()
             print (ip)
-            self._model = ip##########
-            self._upload_data({"model": ip})##########
+            self._upload_data({"netIP": ip})
             return ip
     
     #sent gCode

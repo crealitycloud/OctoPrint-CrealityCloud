@@ -214,8 +214,8 @@ class CrealityCloud(object):
         if event == Events.FIRMWARE_DATA:
             if "MACHINE_TYPE" in payload["data"]:
                 machine_type = payload["data"]["MACHINE_TYPE"]
-                #if self.lk is not None:
-                    #self._aliprinter.model = machine_type
+                if self.lk is not None:
+                    self._aliprinter.model = machine_type
                    
 
         if event == "DisplayLayerProgress_layerChanged":
