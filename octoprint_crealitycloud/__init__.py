@@ -102,7 +102,9 @@ class CrealitycloudPlugin(
         }
 
     def get_template_configs(self):
-        return [dict(type="settings", custom_bindings=True)]
+        return [dict(type="settings", custom_bindings=True),
+                dict(type="tab", template="crealitycloud_tab.jinjia2", custom_bindings=True)
+                ]
 
     def get_assets(self):
         return dict(
