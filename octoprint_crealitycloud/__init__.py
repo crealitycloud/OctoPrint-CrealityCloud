@@ -148,16 +148,26 @@ class CrealitycloudPlugin(
         else:
             return {"actived": 0, "iot": False, "printer": False, "country": country}
 
-    #get gcode return
-    def gCodeHandlerSent(self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs):
+    # get gcode return
+    def gCodeHandlerSent(
+        self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs
+    ):
         print(cmd)
-        if cmd[0] != 'M':
+        if cmd[0] != "M":
             return cmd
         else:
             if "M220 S" in cmd:
                 self._crealitycloud._aliprinter._gCodeHandlerRecv = cmd.lstrip("M220 S")
+                self._crealitycloud._aliprinter._upload_data(
+                    {
+                        "curFeedratePct": int(
+                            self._crealitycloud._aliprinter._gCodeHandlerRecv
+                        )
+                    }
+                )
                 print(self._crealitycloud._aliprinter._gCodeHandlerRecv)
-        
+
+
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
 # ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
 # can be overwritten via __plugin_xyz__ control properties. See the documentation for that.

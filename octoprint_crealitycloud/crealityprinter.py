@@ -1,6 +1,7 @@
 import gzip
 import logging
 import os
+import re
 import socket
 import tempfile
 import threading
@@ -9,12 +10,24 @@ import uuid
 from contextlib import closing
 from enum import Enum
 
+import octoprint
+import octoprint.filemanager.analysis
+import octoprint.filemanager.storage
 import octoprint.plugin
+import octoprint.slicing
 import octoprint.util
 import psutil
 import requests
 from octoprint.events import Events, eventManager
+from octoprint.filemanager import FileManager
+from octoprint.filemanager.destinations import FileDestinations
+from octoprint.printer.profile import PrinterProfileManager
+from octoprint.printer.standard import Printer
+from octoprint.server import current_user
+from octoprint.settings import settings
 from paho.mqtt.client import DISCONNECT
+
+from octoprint_crealitycloud.filecontrol import filecontrol
 
 from .config import CreailtyConfig
 
@@ -35,15 +48,15 @@ class ErrorCode(Enum):
 
 class CrealityPrinter(object):
     def __init__(self, plugin, lk):
+
         self.__linkkit = lk
         self.plugin = plugin
         self._logger = logging.getLogger("octoprint.plugins.crealityprinter")
         self._config = CreailtyConfig(plugin)
         self._settings = plugin._settings
         self.printer = plugin._printer
-        self._logger.info(
-            "-------------------------------creality crealityprinter init!------------------"
-        )
+        self._filecontrol = filecontrol()
+        self.Filemanager = self._filecontrol.Filemanager
         self._stop = 0
         self._status = 0
         self._pause = 0
@@ -58,6 +71,11 @@ class CrealityPrinter(object):
         self._initString = None
         self._DIDString = None
         self._dProgress = 0
+        self._reqGcodeFile = None
+        self._opGcodeFile = None
+        self._logger.info(
+            "-------------------------------creality crealityprinter init!------------------"
+        )
 
     def __setitem__(self, k, v):
         print("__setitem__:" + k)
@@ -109,7 +127,7 @@ class CrealityPrinter(object):
     def ReqPrinterPara(self):
         return self._ReqPrinterPara
 
-    #get Position and Feedrate data
+    # get Position and Feedrate data
     @ReqPrinterPara.setter
     def ReqPrinterPara(self, v):
         self._ReqPrinterPara = int(v)
@@ -119,26 +137,40 @@ class CrealityPrinter(object):
             self.printer.commands(["M114"])
             self._upload_data({"curPosition": self._position})
 
-    #get local ip address
+    # get files infomation and upload
+    @property
+    def reqGcodeFile(self):
+        return self._reqGcodeFile
+
+    # upload filelist
+    @reqGcodeFile.setter
+    def reqGcodeFile(self, v):
+        page = int(v) & 0x0000FFFF
+        origin = int(v) >> 16
+        file_list = self._filecontrol.repfile(origin, page)
+        print(file_list)
+        self._upload_data({"retGcodeFileInfo": file_list})
+
+    # get local ip address
     @property
     def ipAddress(self):
-        try: 
-            s = socket.socket(socket.AF_INET,socket.SOCK_DGRAM) 
-            s.connect(('8.8.8.8',80)) 
-            ip = s.getsockname()[0] 
-        finally: 
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+        finally:
             s.close()
-            print (ip)
+            print(ip)
             self._upload_data({"netIP": ip})
             return ip
-    
-    #sent gCode
+
+    # sent gCode
     @property
     def gcodeCmd(self):
         return self._gcodeCmd
 
     @gcodeCmd.setter
-    def gcodeCmd(self,v):
+    def gcodeCmd(self, v):
         self._gcodeCmd = v
         if v is not None:
             self.printer.commands([v])
@@ -322,7 +354,7 @@ class CrealityPrinter(object):
     def DIDString(self, v):
         self._DIDString = v
         self._config.save_p2p_config("DIDString", v)
-        self._upload_data({"DIDString": self._DIDString}) 
+        self._upload_data({"DIDString": self._DIDString})
         eventManager().fire("CrealityCloud-Video", {})
 
     @property
@@ -336,7 +368,7 @@ class CrealityPrinter(object):
             self.printer.commands(["M106"])
         else:
             self.printer.commands(["M107"])
-        self._upload_data({"fan":self._fan})
+        self._upload_data({"fan": self._fan})
 
     @property
     def curFeedratePct(self):
@@ -396,9 +428,9 @@ class CrealityPrinter(object):
             temp_dir, "crealitycloud-file-upload-{}".format(new_filename)
         )
 
-        gcode_file = os.path.join(temp_dir ,os.path.splitext(new_filename)[0])
-        
-        if os.path.exists(gcode_file)==False:
+        gcode_file = os.path.join(temp_dir, os.path.splitext(new_filename)[0])
+
+        if os.path.exists(gcode_file) == False:
             self.download(download_url, temp_path)
             gfile = gzip.GzipFile(temp_path)
             open(gcode_file, "wb+").write(gfile.read())
@@ -507,3 +539,23 @@ class CrealityPrinter(object):
                         end=" ",
                     )
         self.dProgress = 100
+
+    @property
+    def opGcodeFile(self):
+        return self._opGcodeFile
+
+    # file control
+    @opGcodeFile.setter
+    def opGcodeFile(self, v):
+        if "local" in v:
+            target = FileDestinations.LOCAL
+            filename = str(v).lstrip("printprt:/local/")
+            filenameToSelect = self.Filemanager.path_on_disk(target, filename)
+            print(filenameToSelect)
+            sd = False
+            printAfterLoading = True
+            self.printer.select_file(
+                filenameToSelect,
+                sd,
+                printAfterLoading,
+            )
