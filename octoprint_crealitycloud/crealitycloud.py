@@ -206,7 +206,7 @@ class CrealityCloud(object):
 
         # self._logger.info("event=="+event+"==")
         if event == "Startup":
-             self._aliprinter.boxVersion = "rasp_v1.01b1"
+             self._aliprinter.boxVersion = "rasp_v2.01b99"
              self._aliprinter.connect = 0
              if os.path.exists("/dev/video0"):
                 self._aliprinter.video = 1
@@ -246,6 +246,22 @@ class CrealityCloud(object):
 
         if event == Events.PRINT_DONE:
             self._aliprinter.state = 0
+
+        #get M114 payload
+        if event == Events.POSITION_UPDATE:
+            self._aliprinter._xcoordinate = payload["x"]
+            self._aliprinter._ycoordinate = payload["y"]
+            self._aliprinter._zcoordinate = payload["z"]
+            self._aliprinter._position =\
+                "X:"+str(payload["x"])+\
+                " Y:"+str(payload["y"])+\
+                " Z:"+str(payload["z"])
+        
+        #get local ip address
+        if event == Events.CONNECTIVITY_CHANGED:
+            if payload["new"] == True:
+                self._aliprinter.ipAddress
+            
         # if event == Events.UPLOAD:
         #    if payload["app"] is True:
         #        self._octoprinter.start_print()
@@ -285,8 +301,6 @@ class CrealityCloud(object):
                 + "---"
                 + str(self._octoprinter.is_printing())
             )
-        # self._report_timer.start()
-        # self._aliprinter.nozzleTemp2 =2
 
     def start_active_service(self, country):
         if self._active_service_thread is not None:

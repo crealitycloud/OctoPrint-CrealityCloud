@@ -9,6 +9,7 @@ import uuid
 
 import octoprint.plugin
 from flask import jsonify, render_template, request
+from linkkit.linkkit import LinkKit
 from octoprint.events import Events
 from octoprint.server import admin_permission
 
@@ -147,6 +148,25 @@ class CrealitycloudPlugin(
         else:
             return {"actived": 0, "iot": False, "printer": False, "country": country}
 
+    # get gcode return
+    def gCodeHandlerSent(
+        self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs
+    ):
+        print(cmd)
+        if cmd[0] != "M":
+            return cmd
+        else:
+            if "M220 S" in cmd:
+                self._crealitycloud._aliprinter._gCodeHandlerRecv = cmd.lstrip("M220 S")
+                self._crealitycloud._aliprinter._upload_data(
+                    {
+                        "curFeedratePct": int(
+                            self._crealitycloud._aliprinter._gCodeHandlerRecv
+                        )
+                    }
+                )
+                print(self._crealitycloud._aliprinter._gCodeHandlerRecv)
+
 
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
 # ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
@@ -168,5 +188,6 @@ def __plugin_load__():
 
     global __plugin_hooks__
     __plugin_hooks__ = {
-        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
+        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
+        "octoprint.comm.protocol.gcode.sent": __plugin_implementation__.gCodeHandlerSent,
     }
