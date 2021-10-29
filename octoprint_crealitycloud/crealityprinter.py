@@ -148,7 +148,6 @@ class CrealityPrinter(object):
         page = int(v) & 0x0000FFFF
         origin = int(v) >> 16
         file_list = self._filecontrol.repfile(origin, page)
-        print(file_list)
         self._upload_data({"retGcodeFileInfo": file_list})
 
     # get local ip address
@@ -160,7 +159,6 @@ class CrealityPrinter(object):
             ip = s.getsockname()[0]
         finally:
             s.close()
-            print(ip)
             self._upload_data({"netIP": ip})
             return ip
 
@@ -547,15 +545,17 @@ class CrealityPrinter(object):
     # file control
     @opGcodeFile.setter
     def opGcodeFile(self, v):
-        if "local" in v:
-            target = FileDestinations.LOCAL
-            filename = str(v).lstrip("printprt:/local/")
-            filenameToSelect = self.Filemanager.path_on_disk(target, filename)
-            print(filenameToSelect)
-            sd = False
-            printAfterLoading = True
-            self.printer.select_file(
-                filenameToSelect,
-                sd,
-                printAfterLoading,
-            )
+        if "print" in v:
+            if "local" in v:
+                target = FileDestinations.LOCAL
+                filename = str(v).lstrip("printprt:/local/")
+                filenameToSelect = self.Filemanager.path_on_disk(target, filename)
+                sd = False
+                printAfterLoading = True
+                self.printer.select_file(
+                    filenameToSelect,
+                    sd,
+                    printAfterLoading,
+                )
+        else:
+            self._filecontrol.controlfiles(v)

@@ -6,7 +6,7 @@ import octoprint.filemanager.storage
 import octoprint.plugin
 import octoprint.slicing
 import octoprint.util
-from octoprint.filemanager import FileManager
+from octoprint.filemanager import FileManager, destinations
 from octoprint.filemanager.destinations import FileDestinations
 from octoprint.printer.profile import PrinterProfileManager
 from octoprint.settings import settings
@@ -68,7 +68,6 @@ class filecontrol(object):
         )
         # 按照文件修改时间重新排序
         self._filelist = sorted(self._filelist, key=lambda x: x["date"], reverse=True)
-        print(self._filelist)
 
     # 生成符合上报格式的字符串，返回self._filelist列表，其中下标为page（页数）
     def _createfilelist(self):
@@ -104,6 +103,7 @@ class filecontrol(object):
         self._filedict = {"tf": 0, "fileinfo": self._fileinfo, "pageindex": page}
         self._repfilelist.append(self._filedict)
 
+    # 按页数返回文件信息字符串
     def repfile(self, origin, p):
         # 若是重新读取文件
         if p == 0:
@@ -115,3 +115,29 @@ class filecontrol(object):
             return self._repfilelist[p]
         else:
             return None
+
+    # 文件的删除与重命名
+    def controlfiles(self, v):
+        if "delete" in v:
+            if "local" in v:
+                destination = FileDestinations.LOCAL
+                path = str(v).lstrip("deleteprt:/local/")
+                self.Filemanager.remove_file(destination, path)
+        if "rename" in v:
+            if "local" in v:
+                v = str(v).lstrip("renameprt:/local:")
+                oldname = ""
+                newname = ""
+                for x in v:
+                    if x != ":":
+                        newname = newname + x
+                    else:
+                        oldname = newname
+                        newname = ""
+                target = FileDestinations.LOCAL
+                oldname = self.Filemanager.path_on_disk(target, oldname)
+                newname = self.Filemanager.path_on_disk(target, newname)
+                try:
+                    os.rename(oldname, newname)
+                except Exception as e:
+                    print(e)
