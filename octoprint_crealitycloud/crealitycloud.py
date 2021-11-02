@@ -14,7 +14,7 @@ from .perpetual_timer import PerpetualTimer
 
 
 class CrealityCloud(object):
-    def __init__(self, plugin):
+    def __init__(self, plugin, recorderObject):
         # cn-shanghai，us-west-1，ap-southeast-1
         self._logger = logging.getLogger("octoprint.plugins.crealitycloud")
         self.plugin = plugin
@@ -33,6 +33,7 @@ class CrealityCloud(object):
         self._iot_connected = False
         self.lk = None
         self.connect_aliyun()
+        self.recorder = recorderObject
 
     @property
     def iot_connected(self):
@@ -182,6 +183,8 @@ class CrealityCloud(object):
         self._logger.info("video service started")
 
     def device_start(self):
+        print("____________________device start___________________")
+        self.recorder.run()
         if self.lk is not None:
             if os.path.exists("/dev/video0"):
                 self._aliprinter.video = 1
@@ -210,13 +213,13 @@ class CrealityCloud(object):
              self._aliprinter.connect = 0
              if os.path.exists("/dev/video0"):
                 self._aliprinter.video = 1
-                
+
         if event == Events.FIRMWARE_DATA:
             if "MACHINE_TYPE" in payload["data"]:
                 machine_type = payload["data"]["MACHINE_TYPE"]
                 if self.lk is not None:
                     self._aliprinter.model = machine_type
-                   
+
 
         if event == "DisplayLayerProgress_layerChanged":
             self._aliprinter.layer = int(payload["currentLayer"])
@@ -231,6 +234,7 @@ class CrealityCloud(object):
         if event == Events.DISCONNECTED:
             self._aliprinter.connect = 0
             self._report_timer.cancel()
+            self.recorder.stop()
 
         if event == Events.PRINT_STARTED:
             self._aliprinter.state = 1
