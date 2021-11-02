@@ -36,9 +36,7 @@ class filecontrol(object):
         storage_managers[
             FileDestinations.LOCAL
         ] = octoprint.filemanager.storage.LocalFileStorage(
-            self._settings.getBaseFolder("uploads"),
-            really_universal=self._settings.getBoolean(
-                ["feature", "enforceReallyUniversalFilenames"]
+            self._settings.getBaseFolder("uploads")
             ),
         )
         self.Filemanager = FileManager(
