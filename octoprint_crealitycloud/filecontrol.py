@@ -37,7 +37,6 @@ class filecontrol(object):
             FileDestinations.LOCAL
         ] = octoprint.filemanager.storage.LocalFileStorage(
             self._settings.getBaseFolder("uploads")
-            ),
         )
         self.Filemanager = FileManager(
             analysisQueue,
