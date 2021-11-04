@@ -8,6 +8,7 @@ import time
 import uuid
 
 import octoprint.plugin
+from docutils.parsers.rst.directives import percentage
 from flask import jsonify, render_template, request
 from linkkit.linkkit import LinkKit
 from octoprint.events import Events
@@ -157,15 +158,40 @@ class CrealitycloudPlugin(
             return cmd
         else:
             if "M220 S" in cmd:
-                self._crealitycloud._aliprinter._gCodeHandlerRecv = cmd.lstrip("M220 S")
+                self._crealitycloud._aliprinter._curFeedratePct = cmd.lstrip("M220 S")
                 self._crealitycloud._aliprinter._upload_data(
                     {
                         "curFeedratePct": int(
-                            self._crealitycloud._aliprinter._gCodeHandlerRecv
+                            self._crealitycloud._aliprinter._curFeedratePct
                         )
                     }
                 )
-                print(self._crealitycloud._aliprinter._gCodeHandlerRecv)
+                print(self._crealitycloud._aliprinter._curFeedratePct)
+            if "M27" in cmd:
+                if "c" in cmd:
+                    return
+                    # filename = cmd.
+                else:
+                    return
+
+    def gCodeHandlerreceived(self, comm_instance, line, *args, **kwargs):
+        if "SD printing byte " in line:
+            leftnum = ""
+            rightnum = ""
+            percentstr = line.lstrip("SD printing byte ")
+            for i in percentstr:
+                if i == "/":
+                    rightnum = str(percentstr.lstrip(leftnum + "/")).rstrip("\r\n")
+                    break
+                leftnum = leftnum + str(i)
+            self._crealitycloud._aliprinter._percent = int(
+                (int(leftnum) / int(rightnum) )* 100
+            )
+            return line
+        if "Current file: " in line:
+            self._crealitycloud._aliprinter._filename = str(str(line).lstrip("Current file: ")).rsplit("\n")
+            return line
+        return line
 
 
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
@@ -190,4 +216,5 @@ def __plugin_load__():
     __plugin_hooks__ = {
         "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
         "octoprint.comm.protocol.gcode.sent": __plugin_implementation__.gCodeHandlerSent,
+        "octoprint.comm.protocol.gcode.received": __plugin_implementation__.gCodeHandlerreceived,
     }

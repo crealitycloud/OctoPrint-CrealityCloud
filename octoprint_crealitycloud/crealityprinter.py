@@ -10,6 +10,8 @@ import uuid
 from contextlib import closing
 from enum import Enum
 
+from future.types.newint import newint
+
 import octoprint
 import octoprint.filemanager.analysis
 import octoprint.filemanager.storage
@@ -62,17 +64,20 @@ class CrealityPrinter(object):
         self._pause = 0
         self._nozzleTemp2 = -1
         self._bedTemp2 = -1
+        self._gcodeCmd = None
         self._xcoordinate = None
         self._ycoordinate = None
         self._zcoordinate = None
         self._position = None
-        self._gCodeHandlerRecv = None
+        self._curFeedratePct = None
         self._APILicense = None
         self._initString = None
         self._DIDString = None
         self._dProgress = 0
         self._reqGcodeFile = None
         self._opGcodeFile = None
+        self._percent = None
+        self._filename = None
         self._logger.info(
             "-------------------------------creality crealityprinter init!------------------"
         )
@@ -132,7 +137,7 @@ class CrealityPrinter(object):
     def ReqPrinterPara(self, v):
         self._ReqPrinterPara = int(v)
         if self._ReqPrinterPara == 0:
-            self._upload_data({"curFeedratePct": int(self._gCodeHandlerRecv)})
+            self._upload_data({"curFeedratePct": int(self._curFeedratePct)})
         if self._ReqPrinterPara == 1:
             self.printer.commands(["M114"])
             self._upload_data({"curPosition": self._position})
@@ -513,7 +518,7 @@ class CrealityPrinter(object):
         # Likely means everything went OK
         return True
 
-    def download(self, url, file_path):
+    def download(self, url, file_path):  # bug
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
         }
