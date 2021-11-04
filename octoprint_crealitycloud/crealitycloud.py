@@ -24,6 +24,7 @@ class CrealityCloud(object):
         # self.config_data = self._config.data()
         self._aliprinter = None
         self._report_timer = PerpetualTimer(5, self.report_temperatures)
+        self._report_sdprinting_timer = PerpetualTimer(5, self.report_chackaliyun)
         self._p2p_service_thread = None
         self._video_service_thread = None
 
@@ -193,6 +194,7 @@ class CrealityCloud(object):
             self._aliprinter.connect = 1
             self._aliprinter.tfCard = 1
             self._report_timer.start()
+            self._report_sdprinting_timer.start()
         else:
             self.connect_aliyun()
 
@@ -206,17 +208,16 @@ class CrealityCloud(object):
 
         # self._logger.info("event=="+event+"==")
         if event == "Startup":
-             self._aliprinter.boxVersion = "rasp_v2.01b99"
-             self._aliprinter.connect = 0
-             if os.path.exists("/dev/video0"):
+            self._aliprinter.boxVersion = "rasp_v2.02b99"  # bug  try
+            self._aliprinter.connect = 0
+            if os.path.exists("/dev/video0"):
                 self._aliprinter.video = 1
-                
+
         if event == Events.FIRMWARE_DATA:
             if "MACHINE_TYPE" in payload["data"]:
                 machine_type = payload["data"]["MACHINE_TYPE"]
                 if self.lk is not None:
                     self._aliprinter.model = machine_type
-                   
 
         if event == "DisplayLayerProgress_layerChanged":
             self._aliprinter.layer = int(payload["currentLayer"])
@@ -247,21 +248,24 @@ class CrealityCloud(object):
         if event == Events.PRINT_DONE:
             self._aliprinter.state = 0
 
-        #get M114 payload
+        # get M114 payload
         if event == Events.POSITION_UPDATE:
             self._aliprinter._xcoordinate = payload["x"]
             self._aliprinter._ycoordinate = payload["y"]
             self._aliprinter._zcoordinate = payload["z"]
-            self._aliprinter._position =\
-                "X:"+str(payload["x"])+\
-                " Y:"+str(payload["y"])+\
-                " Z:"+str(payload["z"])
-        
-        #get local ip address
+            self._aliprinter._position = (
+                "X:"
+                + str(payload["x"])
+                + " Y:"
+                + str(payload["y"])
+                + " Z:"
+                + str(payload["z"])
+            )
+
+        # get local ip address
         if event == Events.CONNECTIVITY_CHANGED:
             if payload["new"] == True:
                 self._aliprinter.ipAddress
-            
         # if event == Events.UPLOAD:
         #    if payload["app"] is True:
         #        self._octoprinter.start_print()
@@ -280,6 +284,13 @@ class CrealityCloud(object):
 
     def on_progress(self, fileid, progress):
         self._aliprinter.printProgress = progress
+
+    def report_chackaliyun(self):
+        self._aliprinter.printer.commands(["M27"])
+        self._aliprinter.printer.commands(["M27C"])
+        upstr = "mcu_print_filename:"+ str(self._aliprinter._filename)+";mcu_print_percent:"+str(self._aliprinter._percent)+";"
+        self._aliprinter._upload_data({"mcu_print_info": upstr})
+        return
 
     def report_temperatures(self):
         if self._iot_connected is False:
