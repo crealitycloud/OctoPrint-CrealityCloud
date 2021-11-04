@@ -8,6 +8,8 @@ import time
 from linkkit import linkkit
 from octoprint.events import Events
 
+from octoprint_crealitycloud import perpetual_timer
+
 from .config import CreailtyConfig
 from .crealityprinter import CrealityPrinter, ErrorCode
 from .perpetual_timer import PerpetualTimer
@@ -24,7 +26,8 @@ class CrealityCloud(object):
         # self.config_data = self._config.data()
         self._aliprinter = None
         self._report_timer = PerpetualTimer(5, self.report_temperatures)
-        self._report_sdprinting_timer = PerpetualTimer(5, self.report_chackaliyun)
+        self._report_sdprinting_timer = PerpetualTimer(5, self.report_printerstatus)
+        self._check_printer_status = PerpetualTimer(5,self.check_printer_status)
         self._p2p_service_thread = None
         self._video_service_thread = None
 
@@ -195,6 +198,7 @@ class CrealityCloud(object):
             self._aliprinter.tfCard = 1
             self._report_timer.start()
             self._report_sdprinting_timer.start()
+            self._check_printer_status.start()
         else:
             self.connect_aliyun()
 
@@ -232,6 +236,8 @@ class CrealityCloud(object):
         if event == Events.DISCONNECTED:
             self._aliprinter.connect = 0
             self._report_timer.cancel()
+            self._report_sdprinting_timer.cancel()
+            self._check_printer_status.cancel()
 
         if event == Events.PRINT_STARTED:
             self._aliprinter.state = 1
@@ -285,11 +291,18 @@ class CrealityCloud(object):
     def on_progress(self, fileid, progress):
         self._aliprinter.printProgress = progress
 
-    def report_chackaliyun(self):
+    def check_printer_status(self):
+        if self._aliprinter.printer.is_printing() == False:
+            self._aliprinter.state = 0
+        else:
+            self._aliprinter.state = 1
+
+    def report_printerstatus(self):
         self._aliprinter.printer.commands(["M27"])
         self._aliprinter.printer.commands(["M27C"])
-        upstr = "mcu_print_filename:"+ str(self._aliprinter._filename)+";mcu_print_percent:"+str(self._aliprinter._percent)+";"
-        self._aliprinter._upload_data({"mcu_print_info": upstr})
+        if self._aliprinter._filename != None and self._aliprinter._percent != None:
+            upstr = "mcu_print_filename:"+ str(self._aliprinter._filename[0])+";mcu_print_percent:"+str(int(self._aliprinter._percent))+";"
+            self._aliprinter._upload_data({"mcu_print_info": upstr})
         return
 
     def report_temperatures(self):

@@ -10,8 +10,6 @@ import uuid
 from contextlib import closing
 from enum import Enum
 
-from future.types.newint import newint
-
 import octoprint
 import octoprint.filemanager.analysis
 import octoprint.filemanager.storage
@@ -20,6 +18,7 @@ import octoprint.slicing
 import octoprint.util
 import psutil
 import requests
+from future.types.newint import newint
 from octoprint.events import Events, eventManager
 from octoprint.filemanager import FileManager
 from octoprint.filemanager.destinations import FileDestinations
