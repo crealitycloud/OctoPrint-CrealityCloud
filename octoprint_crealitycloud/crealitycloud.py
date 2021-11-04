@@ -28,6 +28,7 @@ class CrealityCloud(object):
         self._report_timer = PerpetualTimer(5, self.report_temperatures)
         self._report_sdprinting_timer = PerpetualTimer(5, self.report_printerstatus)
         self._check_printer_status = PerpetualTimer(5,self.check_printer_status)
+        self._check_video = PerpetualTimer(5,self.check_video)
         self._p2p_service_thread = None
         self._video_service_thread = None
 
@@ -185,6 +186,13 @@ class CrealityCloud(object):
         self.start_p2p_service()
         self._logger.info("video service started")
 
+    def check_video(self):
+        if os.path.exists("/dev/video0") or \
+           os.path.exists("/dev/video1") or \
+           os.path.exists("/dev/video2"):
+                self._aliprinter.video = 1
+                self.video_start()
+
     def device_start(self):
         if self.lk is not None:
             if os.path.exists("/dev/video0"):
@@ -214,6 +222,7 @@ class CrealityCloud(object):
         if event == "Startup":
             self._aliprinter.boxVersion = "rasp_v2.02b99"  # bug  try
             self._aliprinter.connect = 0
+            self._check_video.start()
             if os.path.exists("/dev/video0"):
                 self._aliprinter.video = 1
 
