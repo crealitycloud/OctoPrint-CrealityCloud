@@ -1,14 +1,11 @@
 import logging
 import os
-import shutil
 import subprocess
 import threading
 import time
 
 from linkkit import linkkit
 from octoprint.events import Events
-
-from octoprint_crealitycloud import perpetual_timer
 
 from .config import CreailtyConfig
 from .crealityprinter import CrealityPrinter, ErrorCode
@@ -28,6 +25,7 @@ class CrealityCloud(object):
         self._report_timer = PerpetualTimer(5, self.report_temperatures)
         self._report_sdprinting_timer = PerpetualTimer(5, self.report_printerstatus)
         self._check_printer_status = PerpetualTimer(5,self.check_printer_status)
+        self._report_boxversion = PerpetualTimer(5,self.report_boxversion)
         self._p2p_service_thread = None
         self._video_service_thread = None
 
@@ -212,7 +210,7 @@ class CrealityCloud(object):
 
         # self._logger.info("event=="+event+"==")
         if event == "Startup":
-            self._aliprinter.boxVersion = "rasp_v2.02b99"  # bug  try
+            self._report_boxversion.start()
             self._aliprinter.connect = 0
             if os.path.exists("/dev/video0"):
                 self._aliprinter.video = 1
@@ -325,6 +323,18 @@ class CrealityCloud(object):
                 + "---"
                 + str(self._octoprinter.is_printing())
             )
+	#Report box version until success
+    def report_boxversion(self):
+        if self._aliprinter.bool_boxVersion != True:
+            try:
+                self._aliprinter.boxVersion = self._aliprinter._boxVersion
+            except:
+                pass
+            else:
+                self.bool_boxVersion = True
+                self._report_boxversion.cancel()
+        else:
+            self._report_boxversion.cancel()
 
     def start_active_service(self, country):
         if self._active_service_thread is not None:

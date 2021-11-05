@@ -3,15 +3,9 @@ from __future__ import absolute_import
 
 import logging
 import os
-import threading
-import time
-import uuid
 
 import octoprint.plugin
-from flask import jsonify, render_template, request
-from linkkit.linkkit import LinkKit
-from octoprint.events import Events
-from octoprint.server import admin_permission
+from flask import request
 
 from .crealitycloud import CrealityCloud
 from .cxhttp import CrealityAPI
