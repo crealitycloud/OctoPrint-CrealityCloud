@@ -6,7 +6,7 @@ import octoprint.filemanager.storage
 import octoprint.plugin
 import octoprint.slicing
 import octoprint.util
-from octoprint.filemanager import FileManager, destinations
+from octoprint.filemanager import FileManager
 from octoprint.filemanager.destinations import FileDestinations
 from octoprint.printer.profile import PrinterProfileManager
 from octoprint.settings import settings

@@ -3,16 +3,9 @@ from __future__ import absolute_import
 
 import logging
 import os
-import threading
-import time
-import uuid
 
 import octoprint.plugin
-from docutils.parsers.rst.directives import percentage
-from flask import jsonify, render_template, request
-from linkkit.linkkit import LinkKit
-from octoprint.events import Events
-from octoprint.server import admin_permission
+from flask import request
 
 from .crealitycloud import CrealityCloud
 from .cxhttp import CrealityAPI
@@ -176,16 +169,18 @@ class CrealitycloudPlugin(
 
     def gCodeHandlerreceived(self, comm_instance, line, *args, **kwargs):
         if "SD printing byte " in line:
+            self._crealitycloud._aliprinter.state = 1
             leftnum = ""
             rightnum = ""
             percentstr = line.lstrip("SD printing byte ")
             for i in percentstr:
                 if i == "/":
-                    rightnum = str(percentstr.lstrip(leftnum + "/")).rstrip("\r\n")
+                    rightnum = str(percentstr.lstrip(leftnum)).rstrip("\r\n")
+                    rightnum = rightnum.lstrip("/")
                     break
                 leftnum = leftnum + str(i)
-            self._crealitycloud._aliprinter._percent = int(
-                (int(leftnum) / int(rightnum) )* 100
+            self._crealitycloud._aliprinter._percent = float(
+                (float(leftnum) / float(rightnum) )* 100
             )
             return line
         if "Current file: " in line:

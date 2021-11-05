@@ -1,6 +1,5 @@
 import logging
 import os
-import shutil
 import subprocess
 import threading
 import time
@@ -24,7 +23,9 @@ class CrealityCloud(object):
         # self.config_data = self._config.data()
         self._aliprinter = None
         self._report_timer = PerpetualTimer(5, self.report_temperatures)
-        self._report_sdprinting_timer = PerpetualTimer(5, self.report_chackaliyun)
+        self._report_sdprinting_timer = PerpetualTimer(5, self.report_printerstatus)
+        self._check_printer_status = PerpetualTimer(5,self.check_printer_status)
+        self._report_boxversion = PerpetualTimer(5,self.report_boxversion)
         self._p2p_service_thread = None
         self._video_service_thread = None
 
@@ -195,6 +196,7 @@ class CrealityCloud(object):
             self._aliprinter.tfCard = 1
             self._report_timer.start()
             self._report_sdprinting_timer.start()
+            self._check_printer_status.start()
         else:
             self.connect_aliyun()
 
@@ -208,7 +210,7 @@ class CrealityCloud(object):
 
         # self._logger.info("event=="+event+"==")
         if event == "Startup":
-            self._aliprinter.boxVersion = "rasp_v2.02b99"  # bug  try
+            self._report_boxversion.start()
             self._aliprinter.connect = 0
             if os.path.exists("/dev/video0"):
                 self._aliprinter.video = 1
@@ -232,6 +234,8 @@ class CrealityCloud(object):
         if event == Events.DISCONNECTED:
             self._aliprinter.connect = 0
             self._report_timer.cancel()
+            self._report_sdprinting_timer.cancel()
+            self._check_printer_status.cancel()
 
         if event == Events.PRINT_STARTED:
             self._aliprinter.state = 1
@@ -285,11 +289,18 @@ class CrealityCloud(object):
     def on_progress(self, fileid, progress):
         self._aliprinter.printProgress = progress
 
-    def report_chackaliyun(self):
+    def check_printer_status(self):
+        if self._aliprinter.printer.is_printing() == False:
+            self._aliprinter.state = 0
+        else:
+            self._aliprinter.state = 1
+
+    def report_printerstatus(self):
         self._aliprinter.printer.commands(["M27"])
         self._aliprinter.printer.commands(["M27C"])
-        upstr = "mcu_print_filename:"+ str(self._aliprinter._filename)+";mcu_print_percent:"+str(self._aliprinter._percent)+";"
-        self._aliprinter._upload_data({"mcu_print_info": upstr})
+        if self._aliprinter._filename != None and self._aliprinter._percent != None:
+            upstr = "mcu_print_filename:"+ str(self._aliprinter._filename[0])+";mcu_print_percent:"+str(int(self._aliprinter._percent))+";"
+            self._aliprinter._upload_data({"mcu_print_info": upstr})
         return
 
     def report_temperatures(self):
@@ -312,6 +323,18 @@ class CrealityCloud(object):
                 + "---"
                 + str(self._octoprinter.is_printing())
             )
+	#Report box version until success
+    def report_boxversion(self):
+        if self._aliprinter.bool_boxVersion != True:
+            try:
+                self._aliprinter.boxVersion = self._aliprinter._boxVersion
+            except:
+                pass
+            else:
+                self.bool_boxVersion = True
+                self._report_boxversion.cancel()
+        else:
+            self._report_boxversion.cancel()
 
     def start_active_service(self, country):
         if self._active_service_thread is not None:

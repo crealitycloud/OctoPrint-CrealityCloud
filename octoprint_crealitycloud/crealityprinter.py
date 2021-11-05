@@ -1,7 +1,6 @@
 import gzip
 import logging
 import os
-import re
 import socket
 import tempfile
 import threading
@@ -9,8 +8,6 @@ import time
 import uuid
 from contextlib import closing
 from enum import Enum
-
-from future.types.newint import newint
 
 import octoprint
 import octoprint.filemanager.analysis
@@ -21,13 +18,7 @@ import octoprint.util
 import psutil
 import requests
 from octoprint.events import Events, eventManager
-from octoprint.filemanager import FileManager
 from octoprint.filemanager.destinations import FileDestinations
-from octoprint.printer.profile import PrinterProfileManager
-from octoprint.printer.standard import Printer
-from octoprint.server import current_user
-from octoprint.settings import settings
-from paho.mqtt.client import DISCONNECT
 
 from octoprint_crealitycloud.filecontrol import filecontrol
 
@@ -78,6 +69,8 @@ class CrealityPrinter(object):
         self._opGcodeFile = None
         self._percent = None
         self._filename = None
+        self._boxVersion = "rasp_v2.01b99"
+        self.bool_boxVersion = None
         self._logger.info(
             "-------------------------------creality crealityprinter init!------------------"
         )
@@ -308,7 +301,6 @@ class CrealityPrinter(object):
 
     @boxVersion.setter
     def boxVersion(self, v):
-        self._boxVersion = v
         self._upload_data({"boxVersion": self._boxVersion})
 
     @property
