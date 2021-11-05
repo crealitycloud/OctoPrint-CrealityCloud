@@ -8,7 +8,6 @@ import time
 import uuid
 
 import octoprint.plugin
-from docutils.parsers.rst.directives import percentage
 from flask import jsonify, render_template, request
 from linkkit.linkkit import LinkKit
 from octoprint.events import Events
