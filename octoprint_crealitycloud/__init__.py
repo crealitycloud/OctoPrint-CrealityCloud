@@ -92,7 +92,7 @@ class CrealitycloudPlugin(
                 "repo": "OctoPrint-Crealitycloud",
                 "current": self._plugin_version,
                 # update method: pip
-                "pip": "https://github.com/hemiao218/OctoPrint-Crealitycloud/archive/{target_version}.zip",
+                "pip": "https://github.com/crealitycloud/OctoPrint-Crealitycloud/archive/{target_version}.zip",
             }
         }
 
