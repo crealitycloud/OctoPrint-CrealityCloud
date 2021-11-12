@@ -88,7 +88,7 @@ class CrealitycloudPlugin(
                 "displayVersion": self._plugin_version,
                 # version check: github repository
                 "type": "github_release",
-                "user": "hemiao218",
+                "user": "crealitycloud",
                 "repo": "OctoPrint-Crealitycloud",
                 "current": self._plugin_version,
                 # update method: pip
@@ -200,7 +200,7 @@ __plugin_name__ = "Crealitycloud Plugin"
 # __plugin_pythoncompat__ = ">=2.7,<3" # only python 2
 # __plugin_pythoncompat__ = ">=3,<4" # only python 3
 # __plugin_pythoncompat__ = ">=2.7,<4" # python 2 and 3
-__plugin_pythoncompat__ = ">=2.7,<4"
+__plugin_pythoncompat__ = ">=3,<4"
 
 
 def __plugin_load__():
