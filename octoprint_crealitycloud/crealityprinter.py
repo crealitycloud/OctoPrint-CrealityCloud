@@ -60,7 +60,7 @@ class CrealityPrinter(object):
         self._ycoordinate = None
         self._zcoordinate = None
         self._position = None
-        self._curFeedratePct = None
+        self._curFeedratePct = ""
         self._APILicense = None
         self._initString = None
         self._DIDString = None
@@ -72,11 +72,11 @@ class CrealityPrinter(object):
         self._boxVersion = "rasp_v2.01b99"
         self.bool_boxVersion = None
         self._logger.info(
-            "-------------------------------creality crealityprinter init!------------------"
+            "creality crealityprinter init!"
         )
 
     def __setitem__(self, k, v):
-        print("__setitem__:" + k)
+        self._logger.info("__setitem__:" + k)
         self.__dict__[k] = v
 
     def _upload_data(self, payload):
@@ -93,24 +93,7 @@ class CrealityPrinter(object):
     def printId(self, v):
         self._printId = v
         self._upload_data({"printId": self._printId})
-        print("=============" + self._printId)
-
-    @property
-    def print(self):
-        return self._print
-
-    @print.setter
-    def print(self, url):
-        self._print = url
-        self.layer = 0
-        printId = str(uuid.uuid1()).replace("-", "")
-        # self.printId = printId
-        self._download_thread = threading.Thread(
-            target=self._process_file_request, args=(url, printId)
-        )
-        self._download_thread.start()
-        # self._process_file_request(url, None)
-        print("print:" + url)
+        self._logger.info("printId:" + self._printId)
 
     @property
     def video(self):
@@ -147,6 +130,15 @@ class CrealityPrinter(object):
         origin = int(v) >> 16
         file_list = self._filecontrol.repfile(origin, page)
         self._upload_data({"retGcodeFileInfo": file_list})
+
+    # upload curFeedratePct
+    @property
+    def curFeedratePct(self):
+        return self._curFeedratePct
+
+    @curFeedratePct.setter
+    def curFeedratePct(self,v):
+        self._upload_data({"curFeedratePct":int(v)})
 
     # get local ip address
     @property
@@ -366,10 +358,6 @@ class CrealityPrinter(object):
         self._upload_data({"fan": self._fan})
 
     @property
-    def curFeedratePct(self):
-        return self._curFeedratePct
-
-    @property
     def setFeedratePct(self):
         return self._curFeedratePct
 
@@ -528,11 +516,6 @@ class CrealityPrinter(object):
                     if time.time() - now_time > 2:
                         now_time = time.time()
                         self.dProgress = int(now_jd)
-                    print(
-                        "\r 文件下载进度：%d%%(%d/%d) - %s"
-                        % (now_jd, data_count, content_size, file_path),
-                        end=" ",
-                    )
         self.dProgress = 100
 
     @property

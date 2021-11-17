@@ -10,6 +10,7 @@ from octoprint.filemanager import FileManager
 from octoprint.filemanager.destinations import FileDestinations
 from octoprint.printer.profile import PrinterProfileManager
 from octoprint.settings import settings
+import logging
 
 
 class filecontrol(object):
@@ -19,6 +20,7 @@ class filecontrol(object):
         self._filedict = {}
         self._filelist = []
         self._repfilelist = []
+        self._logger = logging.getLogger("octoprint.plugins.crealityprinter")
 
         self._settings = settings()
 
@@ -137,4 +139,4 @@ class filecontrol(object):
                 try:
                     os.rename(oldname, newname)
                 except Exception as e:
-                    print(e)
+                    self._logger.error(e)
