@@ -67,10 +67,11 @@ class CrealityPrinter(object):
         self._dProgress = 0
         self._reqGcodeFile = None
         self._opGcodeFile = None
-        self._percent = None
+        self._percent = 0
         self._filename = None
         self._boxVersion = "rasp_v2.01b99"
         self.bool_boxVersion = None
+        self._mcu_is_print = 0
         self._logger.info(
             "creality crealityprinter init!"
         )

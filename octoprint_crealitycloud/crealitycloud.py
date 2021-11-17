@@ -3,6 +3,7 @@ import os
 import subprocess
 import threading
 import time
+from asyncio.windows_events import NULL
 
 from linkkit import linkkit
 from octoprint.events import Events
@@ -279,9 +280,17 @@ class CrealityCloud(object):
     def report_printerstatus(self):
         self._aliprinter.printer.commands(["M27"])
         self._aliprinter.printer.commands(["M27C"])
-        if self._aliprinter._filename != None and self._aliprinter._percent != None:
-            upstr = "mcu_print_filename:"+ str(self._aliprinter._filename[0])+";mcu_print_percent:"+str(int(self._aliprinter._percent))+";"
-            self._aliprinter._upload_data({"mcu_print_info": upstr})
+        if self._aliprinter._filename and self._aliprinter._percent and self._aliprinter._mcu_is_print != 0:
+            filename = str(self._aliprinter._filename[0])
+            filename = filename.replace('GCO','gcode')
+            print (filename)
+            self._aliprinter._upload_data({"print":filename})
+            self._aliprinter._upload_data({"printProgress":int(self._aliprinter._percent)})
+            self._aliprinter._upload_data({"mcu_is_print":self._aliprinter._mcu_is_print})
+        elif self._aliprinter._mcu_is_print == 0:
+            self._aliprinter._upload_data({"mcu_is_print":self._aliprinter._mcu_is_print})
+            self._aliprinter._filename = ""
+            self._aliprinter._mcu_is_print = ""
         return
 
     def report_temperatures(self):
@@ -377,5 +386,4 @@ class CrealityCloud(object):
             self._video_service_thread.start()
 
     def _runcmd(self, command, env):
-        popen = subprocess.Popen(command, env=env)
-        return_code = popen.wait()
+        popen = s

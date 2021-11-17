@@ -143,6 +143,7 @@ class CrealitycloudPlugin(
 
     def gCodeHandlerreceived(self, comm_instance, line, *args, **kwargs):
         if "SD printing byte " in line:
+            self._crealitycloud._aliprinter._mcu_is_print = 1
             self._crealitycloud._aliprinter.state = 1
             leftnum = ""
             rightnum = ""
@@ -160,6 +161,8 @@ class CrealitycloudPlugin(
         elif "Current file: " in line:
             self._crealitycloud._aliprinter._filename = str(str(line).lstrip("Current file: ")).rsplit("\n")
             return line
+        elif "Not SD printing" in line:
+            self._crealitycloud._aliprinter._mcu_is_print = 0
         return line
 
 
