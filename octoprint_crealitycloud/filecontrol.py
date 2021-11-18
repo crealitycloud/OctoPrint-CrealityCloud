@@ -1,3 +1,4 @@
+import logging
 import os
 
 import octoprint
@@ -10,7 +11,6 @@ from octoprint.filemanager import FileManager
 from octoprint.filemanager.destinations import FileDestinations
 from octoprint.printer.profile import PrinterProfileManager
 from octoprint.settings import settings
-import logging
 
 
 class filecontrol(object):

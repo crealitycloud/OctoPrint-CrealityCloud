@@ -57,9 +57,7 @@ class CrealitycloudPlugin(
 
     ##~~ def on_after_startup(self):
     def on_after_startup(self):
-        self._logger.info(
-            "creality cloud stared!"
-        )
+        self._logger.info("creality cloud stared!")
         self._crealitycloud.on_start()
 
     def on_event(self, event, payload):
@@ -138,8 +136,8 @@ class CrealitycloudPlugin(
     def gCodeHandlerSent(
         self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs
     ):
-        if gcode == "M220" :
-            self._crealitycloud._aliprinter._curFeedratePct = cmd
+        if gcode == "M220":
+            self._crealitycloud._aliprinter._str_curFeedratePct = cmd
 
     def gCodeHandlerreceived(self, comm_instance, line, *args, **kwargs):
         if "SD printing byte " in line:
@@ -155,11 +153,13 @@ class CrealitycloudPlugin(
                     break
                 leftnum = leftnum + str(i)
             self._crealitycloud._aliprinter._percent = float(
-                (float(leftnum) / float(rightnum) )* 100
+                (float(leftnum) / float(rightnum)) * 100
             )
             return line
         elif "Current file: " in line:
-            self._crealitycloud._aliprinter._filename = str(str(line).lstrip("Current file: ")).rsplit("\n")
+            self._crealitycloud._aliprinter._filename = str(
+                str(line).lstrip("Current file: ")
+            ).rsplit("\n")
             return line
         elif "Not SD printing" in line:
             self._crealitycloud._aliprinter._mcu_is_print = 0

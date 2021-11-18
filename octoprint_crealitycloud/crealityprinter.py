@@ -60,7 +60,8 @@ class CrealityPrinter(object):
         self._ycoordinate = None
         self._zcoordinate = None
         self._position = None
-        self._curFeedratePct = ""
+        self._curFeedratePct = 0
+        self._str_curFeedratePct = ""
         self._APILicense = None
         self._initString = None
         self._DIDString = None
@@ -72,9 +73,7 @@ class CrealityPrinter(object):
         self._boxVersion = "rasp_v2.01b99"
         self.bool_boxVersion = None
         self._mcu_is_print = 0
-        self._logger.info(
-            "creality crealityprinter init!"
-        )
+        self._logger.info("creality crealityprinter init!")
 
     def __setitem__(self, k, v):
         self._logger.info("__setitem__:" + k)
@@ -114,7 +113,7 @@ class CrealityPrinter(object):
     def ReqPrinterPara(self, v):
         self._ReqPrinterPara = int(v)
         if self._ReqPrinterPara == 0:
-            self._upload_data({"curFeedratePct": int(self._curFeedratePct)})
+            self._upload_data({"curFeedratePct": self._curFeedratePct})
         if self._ReqPrinterPara == 1:
             self.printer.commands(["M114"])
             self._upload_data({"curPosition": self._position})
@@ -138,8 +137,12 @@ class CrealityPrinter(object):
         return self._curFeedratePct
 
     @curFeedratePct.setter
-    def curFeedratePct(self,v):
-        self._upload_data({"curFeedratePct":int(v)})
+    def curFeedratePct(self, v):
+        if self._curFeedratePct != v:
+            self._curFeedratePct = int(v)
+            self.printer.feed_rate(self._curFeedratePct)
+
+        self._upload_data({"curFeedratePct": self._curFeedratePct})
 
     # get local ip address
     @property
@@ -359,10 +362,6 @@ class CrealityPrinter(object):
         self._upload_data({"fan": self._fan})
 
     @property
-    def setFeedratePct(self):
-        return self._curFeedratePct
-
-    @property
     def autohome(self):
         return self._autohome
 
@@ -377,12 +376,6 @@ class CrealityPrinter(object):
         if "z" in self._autohome:
             axes.append("z")
         self.printer.home(axes)
-
-    @setFeedratePct.setter
-    def setFeedratePct(self, v):
-        self._curFeedratePct = int(v)
-        self.printer.feed_rate(self._curFeedratePct)
-        self._upload_data({"curFeedratePct": self._curFeedratePct})
 
     @property
     def printStartTime(self):

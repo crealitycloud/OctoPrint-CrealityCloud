@@ -4,6 +4,7 @@ import subprocess
 import threading
 import time
 from asyncio.windows_events import NULL
+from gettext import find
 
 from linkkit import linkkit
 from octoprint.events import Events
@@ -25,9 +26,9 @@ class CrealityCloud(object):
         self._aliprinter = None
         self._report_timer = PerpetualTimer(5, self.report_temperatures)
         self._report_sdprinting_timer = PerpetualTimer(5, self.report_printerstatus)
-        self._check_printer_status = PerpetualTimer(5,self.check_printer_status)
-        self._report_boxversion = PerpetualTimer(5,self.report_boxversion)
-        self._report_curFeedratePct = PerpetualTimer(5,self.report_curFeedratePct)
+        self._check_printer_status = PerpetualTimer(5, self.check_printer_status)
+        self._report_boxversion = PerpetualTimer(5, self.report_boxversion)
+        self._report_curFeedratePct = PerpetualTimer(1, self.gcode_curFeedratePct)
         self._p2p_service_thread = None
         self._video_service_thread = None
 
@@ -152,7 +153,9 @@ class CrealityCloud(object):
         prop_names = list(params.keys())
         for prop_name in prop_names:
             prop_value = params.get(prop_name)
-            self._logger.info("on_thing_prop_changed params:" + prop_name + ":" + str(prop_value))
+            self._logger.info(
+                "on_thing_prop_changed params:" + prop_name + ":" + str(prop_value)
+            )
             exec("self._aliprinter." + prop_name + "='" + str(prop_value) + "'")
 
     def on_publish_topic(self, mid, userdata):
@@ -280,15 +283,24 @@ class CrealityCloud(object):
     def report_printerstatus(self):
         self._aliprinter.printer.commands(["M27"])
         self._aliprinter.printer.commands(["M27C"])
-        if self._aliprinter._filename and self._aliprinter._percent and self._aliprinter._mcu_is_print != 0:
+        if (
+            self._aliprinter._filename
+            and self._aliprinter._percent
+            and self._aliprinter._mcu_is_print != 0
+        ):
             filename = str(self._aliprinter._filename[0])
-            filename = filename.replace('GCO','gcode')
-            print (filename)
-            self._aliprinter._upload_data({"print":filename})
-            self._aliprinter._upload_data({"printProgress":int(self._aliprinter._percent)})
-            self._aliprinter._upload_data({"mcu_is_print":self._aliprinter._mcu_is_print})
+            filename = filename.replace("GCO", "gcode")
+            self._aliprinter._upload_data({"print": filename})
+            self._aliprinter._upload_data(
+                {"printProgress": int(self._aliprinter._percent)}
+            )
+            self._aliprinter._upload_data(
+                {"mcu_is_print": self._aliprinter._mcu_is_print}
+            )
         elif self._aliprinter._mcu_is_print == 0:
-            self._aliprinter._upload_data({"mcu_is_print":self._aliprinter._mcu_is_print})
+            self._aliprinter._upload_data(
+                {"mcu_is_print": self._aliprinter._mcu_is_print}
+            )
             self._aliprinter._filename = ""
             self._aliprinter._mcu_is_print = ""
         return
@@ -307,7 +319,7 @@ class CrealityCloud(object):
                 self._aliprinter.bedTemp = data["bed"].get("actual")
                 self._aliprinter.bedTemp2 = data["bed"].get("target")
 
-	#Report box version until success
+    # Report box version until success
     def report_boxversion(self):
         if self._aliprinter.bool_boxVersion != True:
             try:
@@ -320,12 +332,16 @@ class CrealityCloud(object):
         else:
             self._report_boxversion.cancel()
 
-    def report_curFeedratePct(self):
-        if self._aliprinter._curFeedratePct == "":
+    def gcode_curFeedratePct(self):
+        if not self._aliprinter._str_curFeedratePct:
             return
         else:
             try:
-                self._aliprinter.curFeedratePct = self._aliprinter._curFeedratePct.lstrip("M220 S")
+                S_location = self._aliprinter._str_curFeedratePct.find("S")
+                int_curfeedratepct = self._aliprinter._str_curFeedratePct[
+                    S_location + 1 : len(self._aliprinter._str_curFeedratePct)
+                ]
+                self._aliprinter.curFeedratePct = int(int_curfeedratepct)
             except Exception as e:
                 self._logger.error(e)
 
@@ -386,4 +402,5 @@ class CrealityCloud(object):
             self._video_service_thread.start()
 
     def _runcmd(self, command, env):
-        popen = s
+        popen = subprocess.Popen(command, env=env)
+        return_code = popen.wait()
