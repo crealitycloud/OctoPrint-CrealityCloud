@@ -14,7 +14,7 @@ from octoprint.settings import settings
 
 
 class filecontrol(object):
-    def __init__(self):
+    def __init__(self, plugin):
 
         self._fileinfo = ""
         self._filedict = {}
@@ -22,30 +22,7 @@ class filecontrol(object):
         self._repfilelist = []
         self._logger = logging.getLogger("octoprint.plugins.crealityprinter")
 
-        self._settings = settings()
-
-        analysis_queue_factories = {
-            "gcode": octoprint.filemanager.analysis.GcodeAnalysisQueue
-        }
-        analysisQueue = octoprint.filemanager.analysis.AnalysisQueue(
-            analysis_queue_factories
-        )
-        printerProfileManager = PrinterProfileManager()
-        slicingManager = octoprint.slicing.SlicingManager(
-            self._settings.getBaseFolder("slicingProfiles"), printerProfileManager
-        )
-        storage_managers = {}
-        storage_managers[
-            FileDestinations.LOCAL
-        ] = octoprint.filemanager.storage.LocalFileStorage(
-            self._settings.getBaseFolder("uploads")
-        )
-        self.Filemanager = FileManager(
-            analysisQueue,
-            slicingManager,
-            printerProfileManager,
-            initial_storage_managers=storage_managers,
-        )
+        self.Filemanager = plugin._file_manager
 
     # 获取树莓派TF卡中的文件信息,储存至self._filelist
     def _getTFfileinfo(self):
@@ -120,7 +97,8 @@ class filecontrol(object):
         if "delete" in v:
             if "local" in v:
                 destination = FileDestinations.LOCAL
-                path = str(v).lstrip("deleteprt:/local/")
+                path_num = str(v).find("/local/") + 7
+                path = str(v)[path_num : len(str(v))]
                 self.Filemanager.remove_file(destination, path)
         if "rename" in v:
             if "local" in v:

@@ -48,7 +48,7 @@ class CrealityPrinter(object):
         self._config = CreailtyConfig(plugin)
         self._settings = plugin._settings
         self.printer = plugin._printer
-        self._filecontrol = filecontrol()
+        self._filecontrol = filecontrol(plugin)
         self.Filemanager = self._filecontrol.Filemanager
         self._stop = 0
         self._status = 0
