@@ -8,6 +8,7 @@ from gettext import find
 
 from linkkit import linkkit
 from octoprint.events import Events
+from octoprint.util import RepeatedTimer
 
 from .config import CreailtyConfig
 from .crealityprinter import CrealityPrinter, ErrorCode
@@ -24,11 +25,11 @@ class CrealityCloud(object):
         self._video_started = False
         # self.config_data = self._config.data()
         self._aliprinter = None
-        self._report_timer = PerpetualTimer(5, self.report_temperatures)
-        self._report_sdprinting_timer = PerpetualTimer(5, self.report_printerstatus)
-        self._check_printer_status = PerpetualTimer(5, self.check_printer_status)
-        self._report_boxversion = PerpetualTimer(5, self.report_boxversion)
-        self._report_curFeedratePct = PerpetualTimer(1, self.gcode_curFeedratePct)
+        self._report_timer = RepeatedTimer(5, self.report_temperatures)
+        self._report_sdprinting_timer = RepeatedTimer(5, self.report_printerstatus)
+        self._check_printer_status = RepeatedTimer(5, self.check_printer_status)
+        self._report_boxversion = RepeatedTimer(5, self.report_boxversion)
+        self._report_curFeedratePct = RepeatedTimer(1, self.gcode_curFeedratePct)
         self._p2p_service_thread = None
         self._video_service_thread = None
 
