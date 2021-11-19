@@ -119,7 +119,6 @@ class CrealitycloudPlugin(
         if os.path.exists(self.get_plugin_data_folder() + "/config.json"):
             if not self._crealitycloud.iot_connected:
                 self._logger.info("start iot server")
-                os.system("/usr/bin/sync")
                 self._crealitycloud.device_start()
                 if self._crealitycloud.get_server_region() is not None:
                     country = self._crealitycloud.get_server_region()

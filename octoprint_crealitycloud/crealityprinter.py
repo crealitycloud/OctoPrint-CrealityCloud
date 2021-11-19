@@ -96,6 +96,23 @@ class CrealityPrinter(object):
         self._logger.info("printId:" + self._printId)
 
     @property
+    def print(self):
+        return self._print
+
+    @print.setter
+    def print(self, url):
+        self._print = url
+        self.layer = 0
+        printId = str(uuid.uuid1()).replace("-", "")
+        # self.printId = printId
+        self._download_thread = threading.Thread(
+            target=self._process_file_request, args=(url, printId)
+        )
+        self._download_thread.start()
+        # self._process_file_request(url, None)
+        self._logger.info("print:" + url)
+
+    @property
     def video(self):
         return self._video
 
