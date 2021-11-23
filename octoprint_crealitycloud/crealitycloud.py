@@ -3,7 +3,6 @@ import os
 import subprocess
 import threading
 import time
-from asyncio.windows_events import NULL
 from gettext import find
 
 from linkkit import linkkit
