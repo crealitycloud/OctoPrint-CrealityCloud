@@ -11,7 +11,6 @@ from octoprint.util import RepeatedTimer
 
 from .config import CreailtyConfig
 from .crealityprinter import CrealityPrinter, ErrorCode
-from .perpetual_timer import PerpetualTimer
 
 
 class CrealityCloud(object):
