@@ -197,7 +197,10 @@ class CrealityCloud(object):
             self._check_printer_status.start()
             self._report_curFeedratePct.start()
         else:
-            self.connect_aliyun()
+            try:
+                self.connect_aliyun()
+            except Exception as e:
+                self._logger.error(e)
 
     def on_event(self, event, payload):
 
@@ -213,46 +216,47 @@ class CrealityCloud(object):
             if os.path.exists("/dev/video0"):
                 self._aliprinter.video = 1
 
-        if event == Events.FIRMWARE_DATA:
+        elif event == Events.FIRMWARE_DATA:
             if "MACHINE_TYPE" in payload["data"]:
                 machine_type = payload["data"]["MACHINE_TYPE"]
                 if self.lk is not None:
                     self._aliprinter.model = machine_type
 
-        if event == "DisplayLayerProgress_layerChanged":
+        elif event == "DisplayLayerProgress_layerChanged":
             self._aliprinter.layer = int(payload["currentLayer"])
-        if event == "CrealityCloud-Video":
+        elif event == "CrealityCloud-Video":
             self.video_start()
-        if event == Events.PRINT_FAILED:
+        elif event == Events.PRINT_FAILED:
             if self._aliprinter.stop == 0:
                 self._aliprinter.state = 3
                 self._aliprinter.error = ErrorCode.PRINT_DISCONNECT.value
                 self._aliprinter.printId = ""
                 self._logger.info("print failed")
-        if event == Events.DISCONNECTED:
+        elif event == Events.DISCONNECTED:
             self._aliprinter.connect = 0
             self._report_timer.cancel()
             self._report_sdprinting_timer.cancel()
             self._check_printer_status.cancel()
             self._report_curFeedratePct.cancel()
 
-        if event == Events.PRINT_STARTED:
+        elif event == Events.PRINT_STARTED:
             self._aliprinter.state = 1
 
-        if event == Events.PRINT_PAUSED:
+        elif event == Events.PRINT_PAUSED:
             self._aliprinter.pause = 1
 
-        if event == Events.PRINT_RESUMED:
+        elif event == Events.PRINT_RESUMED:
             self._aliprinter.pause = 0
 
-        if event == Events.PRINT_CANCELLED:
+        elif event == Events.PRINT_CANCELLED:
             self.cancelled = True
+            self._aliprinter.state = 4
 
-        if event == Events.PRINT_DONE:
-            self._aliprinter.state = 0
+        elif event == Events.PRINT_DONE:
+            self._aliprinter.state = 2
 
         # get M114 payload
-        if event == Events.POSITION_UPDATE:
+        elif event == Events.POSITION_UPDATE:
             self._aliprinter._xcoordinate = payload["x"]
             self._aliprinter._ycoordinate = payload["y"]
             self._aliprinter._zcoordinate = payload["z"]
@@ -266,7 +270,7 @@ class CrealityCloud(object):
             )
 
         # get local ip address
-        if event == Events.CONNECTIVITY_CHANGED:
+        elif event == Events.CONNECTIVITY_CHANGED:
             if payload["new"] == True:
                 self._aliprinter.ipAddress
 
@@ -274,10 +278,10 @@ class CrealityCloud(object):
         self._aliprinter.printProgress = progress
 
     def check_printer_status(self):
-        if self._aliprinter.printer.is_printing() == False:
-            if self._aliprinter._state == 1:
-                self._aliprinter.state = 0
-        elif self._aliprinter.printer.is_printing() == True:
+        # if self._aliprinter.printer.is_printing() == False:
+        #     if self._aliprinter._state == 1:
+        #         self._aliprinter.state = 0
+        if self._aliprinter.printer.is_printing() == True:
             self._aliprinter.state = 1
 
     def report_printerstatus(self):

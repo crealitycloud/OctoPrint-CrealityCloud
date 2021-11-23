@@ -90,7 +90,10 @@ class filecontrol(object):
                 destination = FileDestinations.LOCAL
                 path_num = str(v).find("/local/") + 7
                 path = str(v)[path_num : len(str(v))]
-                self.Filemanager.remove_file(destination, path)
+                try:
+                    self.Filemanager.remove_file(destination, path)
+                except Exception as e:
+                    self._logger.error(str(e))
         if "rename" in v:
             if "local" in v:
                 v = str(v).lstrip("renamebox:/local:")
