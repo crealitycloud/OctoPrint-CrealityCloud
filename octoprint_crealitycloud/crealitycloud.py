@@ -21,7 +21,6 @@ class CrealityCloud(object):
         self._octoprinter = plugin._printer
         self._config = CreailtyConfig(plugin)
         self._video_started = False
-        # self.config_data = self._config.data()
         self._aliprinter = None
         self._report_timer = RepeatedTimer(5, self.report_temperatures)
         self._report_sdprinting_timer = RepeatedTimer(5, self.report_printerstatus)
@@ -155,7 +154,10 @@ class CrealityCloud(object):
             self._logger.info(
                 "on_thing_prop_changed params:" + prop_name + ":" + str(prop_value)
             )
-            exec("self._aliprinter." + prop_name + "='" + str(prop_value) + "'")
+            try:
+                exec("self._aliprinter." + prop_name + "='" + str(prop_value) + "'")
+            except Exception as e:
+                self._logger.error(e)
 
     def on_publish_topic(self, mid, userdata):
         self._logger.info("on_publish_topic mid:%d" % mid)
@@ -278,9 +280,6 @@ class CrealityCloud(object):
         self._aliprinter.printProgress = progress
 
     def check_printer_status(self):
-        # if self._aliprinter.printer.is_printing() == False:
-        #     if self._aliprinter._state == 1:
-        #         self._aliprinter.state = 0
         if self._aliprinter.printer.is_printing() == True:
             self._aliprinter.state = 1
 

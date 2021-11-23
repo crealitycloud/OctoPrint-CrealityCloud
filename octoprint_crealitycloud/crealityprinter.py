@@ -104,12 +104,10 @@ class CrealityPrinter(object):
         self._print = url
         self.layer = 0
         printId = str(uuid.uuid1()).replace("-", "")
-        # self.printId = printId
         self._download_thread = threading.Thread(
             target=self._process_file_request, args=(url, printId)
         )
         self._download_thread.start()
-        # self._process_file_request(url, None)
         self._logger.info("print:" + url)
 
     @property
@@ -161,7 +159,7 @@ class CrealityPrinter(object):
 
         self._upload_data({"curFeedratePct": self._curFeedratePct})
 
-    # get local ip address
+    # get local ip address show in the CrealityCloud App
     @property
     def ipAddress(self):
         try:
