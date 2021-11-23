@@ -275,8 +275,9 @@ class CrealityCloud(object):
 
     def check_printer_status(self):
         if self._aliprinter.printer.is_printing() == False:
-            self._aliprinter.state = 0
-        else:
+            if self._aliprinter._state == 1:
+                self._aliprinter.state = 0
+        elif self._aliprinter.printer.is_printing() == True:
             self._aliprinter.state = 1
 
     def report_printerstatus(self):

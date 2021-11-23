@@ -539,7 +539,7 @@ class CrealityPrinter(object):
         if "print" in v:
             if "local" in v:
                 target = FileDestinations.LOCAL
-                filename = str(v).lstrip("printprt:/local/")
+                filename = str(v).lstrip("printbox:/local/")
                 filenameToSelect = self.Filemanager.path_on_disk(target, filename)
                 sd = False
                 printAfterLoading = True

@@ -1,16 +1,7 @@
 import logging
 import os
 
-import octoprint
-import octoprint.filemanager.analysis
-import octoprint.filemanager.storage
-import octoprint.plugin
-import octoprint.slicing
-import octoprint.util
-from octoprint.filemanager import FileManager
 from octoprint.filemanager.destinations import FileDestinations
-from octoprint.printer.profile import PrinterProfileManager
-from octoprint.settings import settings
 
 
 class filecontrol(object):
@@ -102,7 +93,7 @@ class filecontrol(object):
                 self.Filemanager.remove_file(destination, path)
         if "rename" in v:
             if "local" in v:
-                v = str(v).lstrip("renameprt:/local:")
+                v = str(v).lstrip("renamebox:/local:")
                 oldname = ""
                 newname = ""
                 for x in v:
