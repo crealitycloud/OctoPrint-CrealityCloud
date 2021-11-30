@@ -11,11 +11,61 @@ $(function () {
     self.isAcitived = ko.observable(false);
     self.activedMsg = ko.observable("");
     self.appdownloadUrl = ko.observable("");
+    self.allowdownfw = ko.observable(false)
+    self.selectmodelData = ko.observable(0)
     self.WAIT_TIMEOUT = 180;
     self.HAS_WAIT_TIMEOUT = 0;
     // assign the injected parameters, e.g.:
     self.loginStateViewModel = parameters[0];
     self.settingsViewModel = parameters[1];
+    
+    // 绑定select选框数据
+    self.selectData = ko.observable([
+      {id:0, model: "主板-v4.2.10", pricfg: "generic-creality-v4.2.10.cfg", cfg: "STM32F103.config", fw: "klipper.bin" },
+      {id:1, model: "主板-v4.2.7", pricfg: "generic-creality-v4.2.7.cfg", cfg: "STM32F103.config", fw: "klipper.bin" },
+      {id:2, model: "cr30-2021", pricfg: "printer-creality-cr30-2021.cfg", cfg: "STM32F103.config", fw: "klipper.bin" },
+    ])
+    //机型选框事件
+    self.changemodel = function () {
+      // alert(self.selectmodelData())
+      $.ajax({
+        type: "POST",
+        contentType: "application/json; charset=utf-8",
+        url: PLUGIN_BASEURL + "crealitycloud/test",
+        data: JSON.stringify({ id: $("#model").val() }),
+        dataType: "json",
+        success: function (data) {
+          id = $("#model").val()
+          alert(id)
+          if (id >= 0 && id ){
+            self.allowdownfw(true)
+          }
+          else{
+            self.allowdownfw(false)
+          }
+        }
+      }) 
+    }
+
+    self.fwdown = function () {
+      url = window.location.host;
+      $.ajax({
+        type: "GET",
+        contentType: "application/json; charset=utf-8",
+        url: PLUGIN_BASEURL + "crealitycloud/getfwname",
+        data: {},
+        dataType: "json",
+        success: function (data) {
+          if (data.fwname != "0") {
+            window.open('http://'+url+'/downloads/files/local/'+data.fwname);
+          }
+
+        }
+      }
+      )
+      alert(url)
+    }
+
     self.qrcode = new QRCode(document.getElementById("qrcode"), {
       text: "",
       width: 128,

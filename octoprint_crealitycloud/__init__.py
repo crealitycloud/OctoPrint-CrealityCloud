@@ -9,6 +9,7 @@ from flask import request
 
 from .crealitycloud import CrealityCloud
 from .cxhttp import CrealityAPI
+from .klipper_auto_configuration import auto_klipper
 
 
 class CrealitycloudPlugin(
@@ -131,6 +132,63 @@ class CrealitycloudPlugin(
         else:
             return {"actived": 0, "iot": False, "printer": False, "country": country}
 
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+
+    @octoprint.plugin.BlueprintPlugin.route("/test", methods=["POST"])
+    def test(self):
+        id = request.json["id"]
+        print(id)
+        self.klipper = auto_klipper(id)
+        self.klipper.set_path()
+        self.klipper.change_serial()
+        return {"code": "0"}
+
+    @octoprint.plugin.BlueprintPlugin.route("/getfwname", methods=["GET"])
+    def getfwname(self):
+        fwname = self.klipper.get_fwname()
+        return {'fwname':fwname}
+        
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
+    # -
     # get gcode return
     def gCodeHandlerSent(
         self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs

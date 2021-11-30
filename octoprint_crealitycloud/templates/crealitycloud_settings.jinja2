@@ -1,3 +1,11 @@
+<style>
+  #klipper_header {
+      text-align:center;
+      padding:100px;
+  }
+  </style>
+  
+
 <div class="container_fluid" id="bindPage" data-bind="text:activedMsg,visible: isAcitived()">
 </div>
 <div data-bind="visible: !isAcitived()">
@@ -25,3 +33,18 @@
 <div data-bind="visible: disabled()">Please use crealitycloud app scan the qrcode or manual input code</div>
 </div>
 
+<div id="klipper_header">
+<p><h1>Klipper Auto Configuration</h1></p>
+<br>
+<p><h3>Select your printer model</h3></p>
+<!-- data-bind="event:{change:selectmodel}" -->
+  <select id="model" data-bind="options: selectData,optionsText: 'model', optionsValue:'id',value: selectmodelData, optionsCaption: '选择固件',event:{change:changemodel}" >
+  </select>
+  <br>
+    <button
+    id="downfw"
+    data-bind="enable:allowdownfw,click:fwdown"
+    >
+    Click here download the klipper firmware
+    </button>
+</div>
