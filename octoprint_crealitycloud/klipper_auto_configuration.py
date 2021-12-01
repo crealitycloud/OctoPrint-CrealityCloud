@@ -2,43 +2,55 @@
 from __future__ import absolute_import
 
 import io
+import json
+import logging
 import os
 import os.path
 
-class auto_klipper():
-    def __init__(self,id):
-        self._id = 0
-        self._firmware_path = ''
-        self._config_path = ''
-        self._pricfg_path = ''
-        self._printer_path = ''
-        self._firmware = ''
 
-        #set model name
+class auto_klipper:
+    def __init__(self, id):
+        self._logger = logging.getLogger("octoprint.plugins.crealitycloud")
+        self._id = 0
+        self._firmware_path = ""
+        self._config_path = ""
+        self._pricfg_path = ""
+        self._printer_path = ""
+        self._firmware = ""
+
+        # set model name
         self._id = id
 
-        #get user path
+        # get user path
         self._user_path = os.path.expanduser("~")
 
     def set_path(self):
-        with io.open("./model.json", "r", encoding="utf8") as _modellist:
-            templist = _modellist['modellist'][self._id]
-            model = templist['model']
-            pricfg = templist['pricfg']
-            cfg = templist['cfg']
-            self.firmware = templist['firmware']
+        with io.open(
+            os.path.dirname(os.path.abspath(__file__)) + "/model.json",
+            "r",
+            encoding="utf8",
+        ) as _modellist_data:
+            _modellist = json.load(_modellist_data)
+            templist = _modellist["modellist"][int(self._id)]
+            model = templist["model"]
+            pricfg = templist["pricfg"]
+            cfg = templist["cfg"]
+            self._firmware = templist["firmware"]
 
-            #set firmware path
-            self._firmware_path = './firmware/' + self._firmware
-            os.popen("cp " + self._firmware_path + ' ' + self._user_path + '.octoprint/uploads/' + self._firmware)
+            # set firmware path
+            self._firmware_path = os.path.dirname(os.path.abspath(__file__)) + "/firmware/" + self._firmware
+            self._logger.info("cp " + self._firmware_path + " " + self._user_path + "/.octoprint/uploads/" + self._firmware)
+            os.popen("cp " + self._firmware_path + " " + self._user_path + "/.octoprint/uploads/" + self._firmware)
 
-            #set .concfg path
-            self._config_path = './config/' + cfg
-            os.popen("cp " + self._config_path + ' ' + self._user_path + 'klipper/.config')
+            # set .concfg path
+            self._config_path = os.path.dirname(os.path.abspath(__file__)) + "/config/" + cfg
+            self._logger.info("cp " + self._config_path + " " + self._user_path + "/klipper/.config")
+            os.popen("cp " + self._config_path + " " + self._user_path + "/klipper/.config" )
 
-            #set printer.cfg path
-            self._pricfg_path = self._user_path + 'klipper/config/' + pricfg
-            os.popen("cp " + self._pricfg_path + ' ' + self._user_path + "/printer.cfg")
+            # set printer.cfg path
+            self._pricfg_path = self._user_path + "/klipper/config/" + pricfg
+            self._logger.info("............................." + "cp " + self._pricfg_path + " " + self._user_path + "/printer.cfg" +".....................")
+            os.popen("cp " + self._pricfg_path + " " + self._user_path + "/printer.cfg")
 
     def change_serial(self):
         # get seerial
@@ -73,4 +85,3 @@ class auto_klipper():
 
     def get_fwname(self):
         return self._firmware
-

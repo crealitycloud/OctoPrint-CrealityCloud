@@ -28,23 +28,28 @@ $(function () {
     //机型选框事件
     self.changemodel = function () {
       // alert(self.selectmodelData())
-      $.ajax({
-        type: "POST",
-        contentType: "application/json; charset=utf-8",
-        url: PLUGIN_BASEURL + "crealitycloud/test",
-        data: JSON.stringify({ id: $("#model").val() }),
-        dataType: "json",
-        success: function (data) {
-          id = $("#model").val()
-          alert(id)
-          if (id >= 0 && id ){
-            self.allowdownfw(true)
+      if($("#model").val()){
+        $.ajax({
+          type: "POST",
+          contentType: "application/json; charset=utf-8",
+          url: PLUGIN_BASEURL + "crealitycloud/test",
+          data: JSON.stringify({ id: $("#model").val() }),
+          dataType: "json",
+          success: function (data) {
+            id = $("#model").val()
+            if (id >= 0 && id ){
+              alert(id)
+              self.allowdownfw(true)
+            }
+            else{
+              self.allowdownfw(false)
+            }
           }
-          else{
-            self.allowdownfw(false)
-          }
-        }
-      }) 
+        }) 
+      }
+      else{
+        self.allowdownfw(false)
+      }
     }
 
     self.fwdown = function () {
