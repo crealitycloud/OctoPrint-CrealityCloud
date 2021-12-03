@@ -3,13 +3,14 @@ import os
 import subprocess
 import threading
 import time
+from gettext import find
 
 from linkkit import linkkit
 from octoprint.events import Events
+from octoprint.util import RepeatedTimer
 
 from .config import CreailtyConfig
 from .crealityprinter import CrealityPrinter, ErrorCode
-from .perpetual_timer import PerpetualTimer
 
 
 class CrealityCloud(object):
@@ -20,12 +21,12 @@ class CrealityCloud(object):
         self._octoprinter = plugin._printer
         self._config = CreailtyConfig(plugin)
         self._video_started = False
-        # self.config_data = self._config.data()
         self._aliprinter = None
-        self._report_timer = PerpetualTimer(5, self.report_temperatures)
-        self._report_sdprinting_timer = PerpetualTimer(5, self.report_printerstatus)
-        self._check_printer_status = PerpetualTimer(5,self.check_printer_status)
-        self._report_boxversion = PerpetualTimer(5,self.report_boxversion)
+        self._report_timer = RepeatedTimer(5, self.report_temperatures)
+        self._report_sdprinting_timer = RepeatedTimer(5, self.report_printerstatus)
+        self._check_printer_status = RepeatedTimer(5, self.check_printer_status)
+        self._report_boxversion = RepeatedTimer(5, self.report_boxversion)
+        self._report_curFeedratePct = RepeatedTimer(1, self.gcode_curFeedratePct)
         self._p2p_service_thread = None
         self._video_service_thread = None
 
@@ -59,8 +60,6 @@ class CrealityCloud(object):
                 device_name=self.config_data["deviceName"],
                 device_secret=self.config_data["deviceSecret"],
             )
-            # self.config_mqtt(port=1883, protocol="MQTTv311", transport="TCP")
-            # current_dir = os.path.dirname(os.path.abspath(__file__))
             self._iot_connected = True
             self.lk.enable_logger(logging.WARNING)
             self.lk.on_device_dynamic_register = self.on_device_dynamic_register
@@ -76,7 +75,6 @@ class CrealityCloud(object):
             self.lk.on_thing_raw_data_arrived = self.on_thing_raw_data_arrived
             self.lk.thing_setup()
             self.lk.connect_async()
-            # self.lk.start_worker_loop()
             self._logger.info("aliyun loop")
             self._aliprinter = CrealityPrinter(self.plugin, self.lk)
 
@@ -92,14 +90,14 @@ class CrealityCloud(object):
         return regions.get(num)
 
     def on_thing_shadow_get(self, payload, userdata):
-        print("prop data:%r" % self.rawDataToProtocol(payload))
+        self._logger.info("prop data:%r" % self.rawDataToProtocol(payload))
 
     def on_thing_raw_data_arrived(self, payload, userdata):
-        print("on_thing_raw_data_arrived:%r" % payload)
-        print("prop data:%r" % self.rawDataToProtocol(payload))
+        self._logger.info("on_thing_raw_data_arrived:%r" % payload)
+        self._logger.info("prop data:%r" % self.rawDataToProtocol(payload))
 
     def on_thing_raw_data_post(self, payload, userdata):
-        print("on_thing_raw_data_post: %s" % str(payload))
+        self._logger.info("on_thing_raw_data_post: %s" % str(payload))
 
     def rawDataToProtocol(self, byte_data):
         alink_data = {}
@@ -114,53 +112,55 @@ class CrealityCloud(object):
             return alink_data
 
     def on_thing_prop_post(self, request_id, code, data, message, userdata):
-        print(
+        self._logger.info(
             "on_thing_prop_post request id:%s, code:%d, data:%s message:%s"
             % (request_id, code, str(data), message)
         )
 
     def on_device_dynamic_register(self, rc, value, userdata):
         if rc == 0:
-            print("dynamic register device success, value:" + value)
+            self._logger.info("dynamic register device success, value:" + value)
         else:
-            print("dynamic register device fail, message:" + value)
+            self._logger.info("dynamic register device fail, message:" + value)
 
     def on_connect(self, session_flag, rc, userdata):
-        print("on_connect:%d,rc:%d" % (session_flag, rc))
-        # self._iot_connected = True
-        # self._aliprinter = CrealityPrinter(self.plugin, self.lk)
+        self._logger.info("on_connect:%d,rc:%d" % (session_flag, rc))
         pass
 
     def on_disconnect(self, rc, userdata):
-        print("on_disconnect:rc:%d,userdata:" % rc)
-        # self._iot_connected = False
+        self._logger.info("on_disconnect:rc:%d,userdata:" % rc)
 
     def on_topic_message(self, topic, payload, qos, userdata):
-        print(
+        self._logger.info(
             "on_topic_message:" + topic + " payload:" + str(payload) + " qos:" + str(qos)
         )
         pass
 
     def on_subscribe_topic(self, mid, granted_qos, userdata):
-        print(
+        self._logger.info(
             "on_subscribe_topic mid:%d, granted_qos:%s"
             % (mid, str(",".join("%s" % it for it in granted_qos)))
         )
         pass
 
     def on_unsubscribe_topic(self, mid, userdata):
-        print("on_unsubscribe_topic mid:%d" % mid)
+        self._logger.info("on_unsubscribe_topic mid:%d" % mid)
         pass
 
     def on_thing_prop_changed(self, params, userdata):
         prop_names = list(params.keys())
         for prop_name in prop_names:
             prop_value = params.get(prop_name)
-            print("on_thing_prop_changed params:" + prop_name + ":" + str(prop_value))
-            exec("self._aliprinter." + prop_name + "='" + str(prop_value) + "'")
+            self._logger.info(
+                "on_thing_prop_changed params:" + prop_name + ":" + str(prop_value)
+            )
+            try:
+                exec("self._aliprinter." + prop_name + "='" + str(prop_value) + "'")
+            except Exception as e:
+                self._logger.error(e)
 
     def on_publish_topic(self, mid, userdata):
-        print("on_publish_topic mid:%d" % mid)
+        self._logger.info("on_publish_topic mid:%d" % mid)
 
     def on_start(self):
         self._logger.info("plugin started")
@@ -197,8 +197,12 @@ class CrealityCloud(object):
             self._report_timer.start()
             self._report_sdprinting_timer.start()
             self._check_printer_status.start()
+            self._report_curFeedratePct.start()
         else:
-            self.connect_aliyun()
+            try:
+                self.connect_aliyun()
+            except Exception as e:
+                self._logger.error(e)
 
     def on_event(self, event, payload):
 
@@ -208,52 +212,53 @@ class CrealityCloud(object):
         if not self._iot_connected:
             return
 
-        # self._logger.info("event=="+event+"==")
         if event == "Startup":
             self._report_boxversion.start()
             self._aliprinter.connect = 0
             if os.path.exists("/dev/video0"):
                 self._aliprinter.video = 1
 
-        if event == Events.FIRMWARE_DATA:
+        elif event == Events.FIRMWARE_DATA:
             if "MACHINE_TYPE" in payload["data"]:
                 machine_type = payload["data"]["MACHINE_TYPE"]
                 if self.lk is not None:
                     self._aliprinter.model = machine_type
 
-        if event == "DisplayLayerProgress_layerChanged":
+        elif event == "DisplayLayerProgress_layerChanged":
             self._aliprinter.layer = int(payload["currentLayer"])
-        if event == "CrealityCloud-Video":
+        elif event == "CrealityCloud-Video":
             self.video_start()
-        if event == Events.PRINT_FAILED:
+        elif event == Events.PRINT_FAILED:
             if self._aliprinter.stop == 0:
                 self._aliprinter.state = 3
                 self._aliprinter.error = ErrorCode.PRINT_DISCONNECT.value
                 self._aliprinter.printId = ""
                 self._logger.info("print failed")
-        if event == Events.DISCONNECTED:
+        elif event == Events.DISCONNECTED:
             self._aliprinter.connect = 0
             self._report_timer.cancel()
             self._report_sdprinting_timer.cancel()
             self._check_printer_status.cancel()
+            self._report_curFeedratePct.cancel()
 
-        if event == Events.PRINT_STARTED:
+        elif event == Events.PRINT_STARTED:
             self._aliprinter.state = 1
 
-        if event == Events.PRINT_PAUSED:
+        elif event == Events.PRINT_PAUSED:
             self._aliprinter.pause = 1
 
-        if event == Events.PRINT_RESUMED:
+        elif event == Events.PRINT_RESUMED:
             self._aliprinter.pause = 0
 
-        if event == Events.PRINT_CANCELLED:
+        elif event == Events.PRINT_CANCELLED:
             self.cancelled = True
+            self._aliprinter.state = 4
 
-        if event == Events.PRINT_DONE:
-            self._aliprinter.state = 0
+        elif event == Events.PRINT_DONE:
+            self._aliprinter.state = 2
 
         # get M114 payload
-        if event == Events.POSITION_UPDATE:
+        elif event == Events.POSITION_UPDATE:
             self._aliprinter._xcoordinate = payload["x"]
             self._aliprinter._ycoordinate = payload["y"]
             self._aliprinter._zcoordinate = payload["z"]
@@ -267,40 +272,40 @@ class CrealityCloud(object):
             )
 
         # get local ip address
-        if event == Events.CONNECTIVITY_CHANGED:
+        elif event == Events.CONNECTIVITY_CHANGED:
             if payload["new"] == True:
                 self._aliprinter.ipAddress
-        # if event == Events.UPLOAD:
-        #    if payload["app"] is True:
-        #        self._octoprinter.start_print()
-
-        # if event == Events.PRINTER_STATE_CHANGED:
-        #    if payload["state_id"] == "OPERATIONAL":
-        #        if self._aliprinter.stop:
-        #            self._aliprinter.state = 0
-        # if payload["state_id"] == "OFFLINE":
-        #    if self._aliprinter.state == 1:
-        #        self._aliprinter.state = 3
-        #        self._aliprinter.error = ErrorCode.PRINT_DISCONNECT
-
-        # printer_manager = printer_manager_instance(self)
-        # printer_manager.clean_file()
 
     def on_progress(self, fileid, progress):
         self._aliprinter.printProgress = progress
 
     def check_printer_status(self):
-        if self._aliprinter.printer.is_printing() == False:
-            self._aliprinter.state = 0
-        else:
+        if self._aliprinter.printer.is_printing() == True:
             self._aliprinter.state = 1
 
     def report_printerstatus(self):
         self._aliprinter.printer.commands(["M27"])
         self._aliprinter.printer.commands(["M27C"])
-        if self._aliprinter._filename != None and self._aliprinter._percent != None:
-            upstr = "mcu_print_filename:"+ str(self._aliprinter._filename[0])+";mcu_print_percent:"+str(int(self._aliprinter._percent))+";"
-            self._aliprinter._upload_data({"mcu_print_info": upstr})
+        if (
+            self._aliprinter._filename
+            and self._aliprinter._percent
+            and self._aliprinter._mcu_is_print != 0
+        ):
+            filename = str(self._aliprinter._filename[0])
+            filename = filename.replace("GCO", "gcode")
+            self._aliprinter._upload_data({"print": filename})
+            self._aliprinter._upload_data(
+                {"printProgress": int(self._aliprinter._percent)}
+            )
+            self._aliprinter._upload_data(
+                {"mcu_is_print": self._aliprinter._mcu_is_print}
+            )
+        elif self._aliprinter._mcu_is_print == 0:
+            self._aliprinter._upload_data(
+                {"mcu_is_print": self._aliprinter._mcu_is_print}
+            )
+            self._aliprinter._filename = ""
+            self._aliprinter._mcu_is_print = ""
         return
 
     def report_temperatures(self):
@@ -316,14 +321,8 @@ class CrealityCloud(object):
             if data.get("bed") is not None:
                 self._aliprinter.bedTemp = data["bed"].get("actual")
                 self._aliprinter.bedTemp2 = data["bed"].get("target")
-            self._logger.info(
-                str(self._aliprinter.nozzleTemp)
-                + "----"
-                + str(self._aliprinter.bedTemp)
-                + "---"
-                + str(self._octoprinter.is_printing())
-            )
-	#Report box version until success
+
+    # Report box version until success
     def report_boxversion(self):
         if self._aliprinter.bool_boxVersion != True:
             try:
@@ -335,6 +334,19 @@ class CrealityCloud(object):
                 self._report_boxversion.cancel()
         else:
             self._report_boxversion.cancel()
+
+    def gcode_curFeedratePct(self):
+        if not self._aliprinter._str_curFeedratePct:
+            return
+        else:
+            try:
+                S_location = self._aliprinter._str_curFeedratePct.find("S")
+                int_curfeedratepct = self._aliprinter._str_curFeedratePct[
+                    S_location + 1 : len(self._aliprinter._str_curFeedratePct)
+                ]
+                self._aliprinter.curFeedratePct = int(int_curfeedratepct)
+            except Exception as e:
+                self._logger.error(e)
 
     def start_active_service(self, country):
         if self._active_service_thread is not None:
@@ -395,7 +407,3 @@ class CrealityCloud(object):
     def _runcmd(self, command, env):
         popen = subprocess.Popen(command, env=env)
         return_code = popen.wait()
-        # if return_code == 0:
-        #    self._logger.info("_runcmd success:", return_code)
-        # else:
-        #    self._logger.error("_runcmd error:", return_code)

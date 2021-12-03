@@ -11,8 +11,6 @@ class CreailtyConfig(object):
         self._p2p_path = self.path = os.path.join(
             plugin.get_plugin_data_folder(), "p2pcfg.json"
         )
-        self._logger = logging.getLogger("octoprint.plugins.config")
-        self._logger.debug(self._path)
         self._p2pdata = {}
         self._data = {}
         self.load()

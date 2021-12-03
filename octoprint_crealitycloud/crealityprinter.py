@@ -48,7 +48,7 @@ class CrealityPrinter(object):
         self._config = CreailtyConfig(plugin)
         self._settings = plugin._settings
         self.printer = plugin._printer
-        self._filecontrol = filecontrol()
+        self._filecontrol = filecontrol(plugin)
         self.Filemanager = self._filecontrol.Filemanager
         self._stop = 0
         self._status = 0
@@ -60,23 +60,23 @@ class CrealityPrinter(object):
         self._ycoordinate = None
         self._zcoordinate = None
         self._position = None
-        self._curFeedratePct = None
+        self._curFeedratePct = 0
+        self._str_curFeedratePct = ""
         self._APILicense = None
         self._initString = None
         self._DIDString = None
         self._dProgress = 0
         self._reqGcodeFile = None
         self._opGcodeFile = None
-        self._percent = None
+        self._percent = 0
         self._filename = None
         self._boxVersion = "rasp_v2.01b99"
         self.bool_boxVersion = None
-        self._logger.info(
-            "-------------------------------creality crealityprinter init!------------------"
-        )
+        self._mcu_is_print = 0
+        self._logger.info("creality crealityprinter init!")
 
     def __setitem__(self, k, v):
-        print("__setitem__:" + k)
+        self._logger.info("__setitem__:" + k)
         self.__dict__[k] = v
 
     def _upload_data(self, payload):
@@ -93,7 +93,7 @@ class CrealityPrinter(object):
     def printId(self, v):
         self._printId = v
         self._upload_data({"printId": self._printId})
-        print("=============" + self._printId)
+        self._logger.info("printId:" + self._printId)
 
     @property
     def print(self):
@@ -104,13 +104,11 @@ class CrealityPrinter(object):
         self._print = url
         self.layer = 0
         printId = str(uuid.uuid1()).replace("-", "")
-        # self.printId = printId
         self._download_thread = threading.Thread(
             target=self._process_file_request, args=(url, printId)
         )
         self._download_thread.start()
-        # self._process_file_request(url, None)
-        print("print:" + url)
+        self._logger.info("print:" + url)
 
     @property
     def video(self):
@@ -130,7 +128,7 @@ class CrealityPrinter(object):
     def ReqPrinterPara(self, v):
         self._ReqPrinterPara = int(v)
         if self._ReqPrinterPara == 0:
-            self._upload_data({"curFeedratePct": int(self._curFeedratePct)})
+            self._upload_data({"curFeedratePct": self._curFeedratePct})
         if self._ReqPrinterPara == 1:
             self.printer.commands(["M114"])
             self._upload_data({"curPosition": self._position})
@@ -148,7 +146,20 @@ class CrealityPrinter(object):
         file_list = self._filecontrol.repfile(origin, page)
         self._upload_data({"retGcodeFileInfo": file_list})
 
-    # get local ip address
+    # upload curFeedratePct
+    @property
+    def curFeedratePct(self):
+        return self._curFeedratePct
+
+    @curFeedratePct.setter
+    def curFeedratePct(self, v):
+        if self._curFeedratePct != v:
+            self._curFeedratePct = int(v)
+            self.printer.feed_rate(self._curFeedratePct)
+
+        self._upload_data({"curFeedratePct": self._curFeedratePct})
+
+    # get local ip address show in the CrealityCloud App
     @property
     def ipAddress(self):
         try:
@@ -366,14 +377,6 @@ class CrealityPrinter(object):
         self._upload_data({"fan": self._fan})
 
     @property
-    def curFeedratePct(self):
-        return self._curFeedratePct
-
-    @property
-    def setFeedratePct(self):
-        return self._curFeedratePct
-
-    @property
     def autohome(self):
         return self._autohome
 
@@ -388,12 +391,6 @@ class CrealityPrinter(object):
         if "z" in self._autohome:
             axes.append("z")
         self.printer.home(axes)
-
-    @setFeedratePct.setter
-    def setFeedratePct(self, v):
-        self._curFeedratePct = int(v)
-        self.printer.feed_rate(self._curFeedratePct)
-        self._upload_data({"curFeedratePct": self._curFeedratePct})
 
     @property
     def printStartTime(self):
@@ -528,11 +525,6 @@ class CrealityPrinter(object):
                     if time.time() - now_time > 2:
                         now_time = time.time()
                         self.dProgress = int(now_jd)
-                    print(
-                        "\r 文件下载进度：%d%%(%d/%d) - %s"
-                        % (now_jd, data_count, content_size, file_path),
-                        end=" ",
-                    )
         self.dProgress = 100
 
     @property
@@ -545,7 +537,7 @@ class CrealityPrinter(object):
         if "print" in v:
             if "local" in v:
                 target = FileDestinations.LOCAL
-                filename = str(v).lstrip("printprt:/local/")
+                filename = str(v).lstrip("printbox:/local/")
                 filenameToSelect = self.Filemanager.path_on_disk(target, filename)
                 sd = False
                 printAfterLoading = True
