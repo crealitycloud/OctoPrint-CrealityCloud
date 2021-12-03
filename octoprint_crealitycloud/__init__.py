@@ -24,10 +24,11 @@ class CrealitycloudPlugin(
     def __init__(self):
         self._logger = logging.getLogger("octoprint.plugins.crealitycloud")
         self._logger.info(
-            "-------------------------------creality cloud init!------------------"
+            "creality cloud init!"
         )
         self.short_code = None
         self._addr = None
+        self.klipper = auto_klipper()
 
     def initialize(self):
         self._crealitycloud = CrealityCloud(self)
@@ -132,63 +133,28 @@ class CrealitycloudPlugin(
         else:
             return {"actived": 0, "iot": False, "printer": False, "country": country}
 
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-
-    @octoprint.plugin.BlueprintPlugin.route("/test", methods=["POST"])
+    #get model config
+    @octoprint.plugin.BlueprintPlugin.route("/setmodelid", methods=["POST"])
     def test(self):
         id = request.json["id"]
         print(id)
-        self.klipper = auto_klipper(id)
+        self.klipper.set_id(id)
         self.klipper.set_path()
         self.klipper.change_serial()
+        self.klipper.set_status_json(1)
         return {"code": "0"}
-
+    #post firmware name
     @octoprint.plugin.BlueprintPlugin.route("/getfwname", methods=["GET"])
     def getfwname(self):
         fwname = self.klipper.get_fwname()
         return {'fwname':fwname}
-        
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
-    # -
+    #post model.json
+    @octoprint.plugin.BlueprintPlugin.route("/getjson", methods=["GET"])
+    def getjson(self):
+        json = self.klipper.get_json()
+        print(json)
+        return(json)
+
     # get gcode return
     def gCodeHandlerSent(
         self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs

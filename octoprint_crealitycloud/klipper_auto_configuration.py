@@ -9,7 +9,7 @@ import os.path
 
 
 class auto_klipper:
-    def __init__(self, id):
+    def __init__(self):
         self._logger = logging.getLogger("octoprint.plugins.crealitycloud")
         self._id = 0
         self._firmware_path = ""
@@ -17,13 +17,14 @@ class auto_klipper:
         self._pricfg_path = ""
         self._printer_path = ""
         self._firmware = ""
-
-        # set model name
-        self._id = id
+        self._id = 0
 
         # get user path
         self._user_path = os.path.expanduser("~")
 
+    def set_id(self,id):
+        self._id = id
+        
     def set_path(self):
         with io.open(
             os.path.dirname(os.path.abspath(__file__)) + "/model.json",
@@ -32,7 +33,6 @@ class auto_klipper:
         ) as _modellist_data:
             _modellist = json.load(_modellist_data)
             templist = _modellist["modellist"][int(self._id)]
-            model = templist["model"]
             pricfg = templist["pricfg"]
             cfg = templist["cfg"]
             self._firmware = templist["firmware"]
@@ -49,7 +49,6 @@ class auto_klipper:
 
             # set printer.cfg path
             self._pricfg_path = self._user_path + "/klipper/config/" + pricfg
-            self._logger.info("............................." + "cp " + self._pricfg_path + " " + self._user_path + "/printer.cfg" +".....................")
             os.popen("cp " + self._pricfg_path + " " + self._user_path + "/printer.cfg")
 
     def change_serial(self):
@@ -66,7 +65,7 @@ class auto_klipper:
 
             data = ""
             with io.open(
-                "/home/pi/printer.cfg", "r", encoding="utf-8"
+                self._user_path + "/printer.cfg", "r", encoding="utf-8"
             ) as r_printer:  # 创建一个读对象
                 for i in r_printer:  # 逐行读取printer.cfg内容
                     print(i)
@@ -75,7 +74,7 @@ class auto_klipper:
                     data += i
 
             with io.open(
-                "/home/pi/printer.cfg", "w", encoding="utf-8"
+                self._user_path + "/printer.cfg", "w", encoding="utf-8"
             ) as w_printer:  # 创建一个写对象
                 w_printer.write(data.decode("utf8"))
 
@@ -85,3 +84,28 @@ class auto_klipper:
 
     def get_fwname(self):
         return self._firmware
+    
+    def get_json(self):
+        with io.open(
+            os.path.dirname(os.path.abspath(__file__)) + "/model.json",
+            "r",
+            encoding="utf8",
+        ) as file_data:
+            file_json = json.load(file_data)
+            return file_json
+
+    def set_status_json(self,status):
+        with io.open(
+            os.path.dirname(os.path.abspath(__file__)) + "/model.json",
+            "r",
+            encoding="utf8",
+        ) as read_json:
+            data = json.load(read_json)
+            data["model"] = self._id
+            data['klipperable'] = status
+        with io.open(
+            os.path.dirname(os.path.abspath(__file__)) + "/model.json",
+            "w",
+            encoding="utf8",
+        ) as write_json:
+            json.dump(data,write_json)
