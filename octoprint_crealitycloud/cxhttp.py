@@ -6,10 +6,8 @@ import requests
 
 class CrealityAPI(object):
     def __init__(self):
-        # self.__secret = "Os5juJJERoUosWpbd2Q4QmkpNRNr"
-        # self.__g_secret = "dAmohq4DTBH4khjbH7S5Dl7l1FytYPv"
-        self.__homeurl = "https://model-admin.crealitygroup.com"  # "https://model-admin.crealitygroup.com/api/cxy/v2/common/getAddrress"
-        self.__overseaurl = "https://model-admin2.creality.com"  # "https://model-admin2.creality.com/api/cxy/v2/common/getAddrress"
+        self.__homeurl = "https://model-admin.crealitygroup.com"
+        self.__overseaurl = "https://model-admin2.creality.com"
         self.__headers = {
             "__CXY_OS_VER_": "v0.0.1",
             "_CXY_OS_LANG_": "1",

@@ -1,49 +1,19 @@
+import logging
 import os
 
-import octoprint
-import octoprint.filemanager.analysis
-import octoprint.filemanager.storage
-import octoprint.plugin
-import octoprint.slicing
-import octoprint.util
-from octoprint.filemanager import FileManager
 from octoprint.filemanager.destinations import FileDestinations
-from octoprint.printer.profile import PrinterProfileManager
-from octoprint.settings import settings
 
 
 class filecontrol(object):
-    def __init__(self):
+    def __init__(self, plugin):
 
         self._fileinfo = ""
         self._filedict = {}
         self._filelist = []
         self._repfilelist = []
+        self._logger = logging.getLogger("octoprint.plugins.crealityprinter")
 
-        self._settings = settings()
-
-        analysis_queue_factories = {
-            "gcode": octoprint.filemanager.analysis.GcodeAnalysisQueue
-        }
-        analysisQueue = octoprint.filemanager.analysis.AnalysisQueue(
-            analysis_queue_factories
-        )
-        printerProfileManager = PrinterProfileManager()
-        slicingManager = octoprint.slicing.SlicingManager(
-            self._settings.getBaseFolder("slicingProfiles"), printerProfileManager
-        )
-        storage_managers = {}
-        storage_managers[
-            FileDestinations.LOCAL
-        ] = octoprint.filemanager.storage.LocalFileStorage(
-            self._settings.getBaseFolder("uploads")
-        )
-        self.Filemanager = FileManager(
-            analysisQueue,
-            slicingManager,
-            printerProfileManager,
-            initial_storage_managers=storage_managers,
-        )
+        self.Filemanager = plugin._file_manager
 
     # 获取树莓派TF卡中的文件信息,储存至self._filelist
     def _getTFfileinfo(self):
@@ -118,11 +88,15 @@ class filecontrol(object):
         if "delete" in v:
             if "local" in v:
                 destination = FileDestinations.LOCAL
-                path = str(v).lstrip("deleteprt:/local/")
-                self.Filemanager.remove_file(destination, path)
+                path_num = str(v).find("/local/") + 7
+                path = str(v)[path_num : len(str(v))]
+                try:
+                    self.Filemanager.remove_file(destination, path)
+                except Exception as e:
+                    self._logger.error(str(e))
         if "rename" in v:
             if "local" in v:
-                v = str(v).lstrip("renameprt:/local:")
+                v = str(v).lstrip("renamebox:/local:")
                 oldname = ""
                 newname = ""
                 for x in v:
@@ -137,4 +111,4 @@ class filecontrol(object):
                 try:
                     os.rename(oldname, newname)
                 except Exception as e:
-                    print(e)
+                    self._logger.error(e)

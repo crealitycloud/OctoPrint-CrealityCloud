@@ -1,0 +1,139 @@
+{
+    "model": 0,
+    "klipperable": 0,
+    "modellist": [
+        {
+            "id": 0,
+            "model": "主板-v4.2.10",
+            "pricfg": "generic-creality-v4.2.10.cfg",
+            "cfg": "STM32F103.config",
+            "fw": "klipper.bin"
+        },
+        {
+            "id": 1,
+            "model": "主板-v4.2.7",
+            "pricfg": "generic-creality-v4.2.7.cfg",
+            "cfg": "STM32F103.config",
+            "fw": "klipper.bin"
+        },
+        {
+            "id": 2,
+            "model": "cr30-2021",
+            "pricfg": "printer-creality-cr30-2021.cfg",
+            "cfg": "STM32F103.config",
+            "fw": "klipper.bin"
+        },
+        {
+            "id": 3,
+            "model": "cr6se-2020",
+            "pricfg": "printer-creality-cr6se-2020.cfg",
+            "cfg": "STM32F103.config",
+            "fw": "klipper.bin"
+        },
+        {
+            "id": 4,
+            "model": "cr6se-2021",
+            "pricfg": "printer-creality-cr6se-2021.cfg",
+            "cfg": "STM32F103.config",
+            "fw": "klipper.bin"
+        },
+        {
+            "id": 5,
+            "model": "ender3-v2",
+            "pricfg": "printer-creality-ender3-v2-2020.cfg",
+            "cfg": "STM32F103.config",
+            "fw": "klipper.bin"
+        },
+        {
+            "id": 6,
+            "model": "ender3pro",
+            "pricfg": "printer-creality-ender3pro-2020.cfg",
+            "cfg": "STM32F103.config",
+            "fw": "klipper.bin"
+        },
+        {
+            "id": 7,
+            "model": "ender3max",
+            "pricfg": "printer-creality-ender3max-2021.cfg",
+            "cfg": "STM32F103.config",
+            "fw": "klipper.bin"
+        },
+        {
+            "id": 8,
+            "model": "ender6",
+            "pricfg": "printer-creality-ender6-2020.cfg",
+            "cfg": "STM32F103.config",
+            "fw": "klipper.bin"
+        },
+        {
+            "id": 9,
+            "model": "sermoonD1",
+            "pricfg": "printer-creality-sermoonD1-2021.cfg",
+            "cfg": "STM32F103.config",
+            "fw": "klipper.bin"
+        },
+        {
+            "id": 10,
+            "model": "ender5",
+            "pricfg": "printer-creality-ender5-2019.cfg",
+            "cfg": "atmega1284p.config",
+            "fw": "klipper_atmega1284p.elf.hex"
+        },
+        {
+            "id": 11,
+            "model": "ender2",
+            "pricfg": "printer-creality-ender2-2017.cfg",
+            "cfg": "atmega1284p.config",
+            "fw": "klipper_atmega1284p.elf.hex"
+        },
+        {
+            "id": 12,
+            "model": "ender3",
+            "pricfg": "printer-creality-ender3-2018.cfg",
+            "cfg": "atmega1284p.config",
+            "fw": "klipper_atmega1284p.elf.hex"
+        },
+        {
+            "id": 13,
+            "model": "cr10",
+            "pricfg": "printer-creality-cr10-2017.cfg",
+            "cfg": "atmega1284p.config",
+            "fw": "klipper_atmega1284p.elf.hex"
+        },
+        {
+            "id": 14,
+            "model": "cr10mini",
+            "pricfg": "printer-creality-cr10mini-2017.cfg",
+            "cfg": "atmega1284p.config",
+            "fw": "klipper_atmega1284p.elf.hex"
+        },
+        {
+            "id": 15,
+            "model": "ender5plus",
+            "pricfg": "printer-creality-ender5plus-2019.cfg",
+            "cfg": "atmega2560.config",
+            "fw": "klipper_atmega2560.elf.hex"
+        },
+        {
+            "id": 16,
+            "model": "cr10s",
+            "pricfg": "printer-creality-cr10s-2017.cfg",
+            "cfg": "atmega2560.config",
+            "fw": "klipper_atmega2560.elf.hex"
+        },
+        {
+            "id": 17,
+            "model": "cr20",
+            "pricfg": "printer-creality-cr20-2018.cfg",
+            "cfg": "atmega2560.config",
+            "fw": "klipper_atmega2560.elf.hex"
+        },
+        {
+            "id": 18,
+            "model": "cr20-pro",
+            "pricfg": "printer-creality-cr20-pro-2019.cfg",
+            "cfg": "atmega2560.config",
+            "fw": "klipper_atmega2560.elf.hex"
+        }
+    ]
+}

@@ -1,4 +1,3 @@
 #!/bin/bash
-DIR=`uname``getconf LONG_BIT`"_"`arch`
-cd `dirname $0`/$DIR
+cd `dirname $0`/Linux32_armv7l
 ./GenerateIdentifier -a

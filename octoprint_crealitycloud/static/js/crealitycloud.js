@@ -16,6 +16,107 @@ $(function () {
     // assign the injected parameters, e.g.:
     self.loginStateViewModel = parameters[0];
     self.settingsViewModel = parameters[1];
+
+    //确定btn enable 绑定
+    self.allowconfirm = ko.observable(false)
+    //下载固件btn enable 绑定
+    self.allowdownfw = ko.observable(false)
+    //机型选框绑定
+    self.selectmodelData = ko.observable(undefined)
+    //使用klipper复选框绑定
+    self.checkKlipper = ko.observable(false);
+    //klipper div隐藏
+    self.Klipperable = ko.observable(false)
+
+    // 获取json并绑定机型选框数据
+    $.ajax({
+      type: "GET",
+      contentType: "application/json; charset=utf-8",
+      url: PLUGIN_BASEURL + "crealitycloud/getjson",
+      data: {},
+      dataType: "json",
+      success: function (data) {
+        self.selectData = ko.observable(data.modellist)
+        if (data.klipperable) {
+          self.Klipperable = ko.observable(true)
+          self.checkKlipper(true)
+          self.selectmodelData(data.model)
+        }
+      }
+    })
+
+    //复选框事件
+    self.clickKlipper = function () {
+      self.Klipperable(self.checkKlipper)
+      return true
+    }
+
+    //机型选框事件
+    self.changemodel = function () {
+      if ($("#model").val()) {
+        $.ajax({
+          type: "GET",
+          contentType: "application/json; charset=utf-8",
+          url: PLUGIN_BASEURL + "crealitycloud/getjson",
+          data: {},
+          dataType: "json",
+          success: function (data) {
+            if (data.model != $("#model").val()) {
+              self.allowconfirm(true)
+            }
+            else {
+              self.allowconfirm(false)
+            }
+          }
+        })
+      }
+      else {
+        self.allowconfirm(false)
+      }
+    }
+
+    //确认按钮事件
+    self.clickconfirm = function () {
+      if ($("#model").val()) {
+        $.ajax({
+          type: "POST",
+          contentType: "application/json; charset=utf-8",
+          url: PLUGIN_BASEURL + "crealitycloud/setmodelid",
+          data: JSON.stringify({ id: $("#model").val() }),
+          dataType: "json",
+          success: function (data) {
+            id = $("#model").val()
+            if (id >= 0 && id) {
+              self.allowdownfw(true)
+            }
+            else {
+              self.allowdownfw(false)
+            }
+          }
+        })
+      }
+      else {
+        self.allowdownfw(false)
+      }
+    }
+
+    //download firmware
+    self.fwdown = function () {
+      url = window.location.host;
+      $.ajax({
+        type: "GET",
+        contentType: "application/json; charset=utf-8",
+        url: PLUGIN_BASEURL + "crealitycloud/getfwname",
+        data: {},
+        dataType: "json",
+        success: function (data) {
+          if (data.fwname != "0") {
+            window.open('http://' + url + '/downloads/files/local/' + data.fwname);
+          }
+        }
+      })
+    }
+
     self.qrcode = new QRCode(document.getElementById("qrcode"), {
       text: "",
       width: 128,

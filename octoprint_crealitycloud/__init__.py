@@ -9,14 +9,7 @@ from flask import request
 
 from .crealitycloud import CrealityCloud
 from .cxhttp import CrealityAPI
-
-### (Don't forget to remove me)
-# This is a basic skeleton for your plugin's __init__.py. You probably want to adjust the class name of your plugin
-# as well as the plugin mixins it's subclassing from. This is really just a basic skeleton to get you started,
-# defining your plugin as a template plugin, settings and asset plugin. Feel free to add or remove mixins
-# as necessary.
-#
-# Take a look at the documentation on what other plugin mixins are available.
+from .klipper_auto_configuration import auto_klipper
 
 
 class CrealitycloudPlugin(
@@ -31,10 +24,11 @@ class CrealitycloudPlugin(
     def __init__(self):
         self._logger = logging.getLogger("octoprint.plugins.crealitycloud")
         self._logger.info(
-            "-------------------------------creality cloud init!------------------"
+            "creality cloud init!"
         )
         self.short_code = None
         self._addr = None
+        self.klipper = auto_klipper()
 
     def initialize(self):
         self._crealitycloud = CrealityCloud(self)
@@ -65,9 +59,7 @@ class CrealitycloudPlugin(
 
     ##~~ def on_after_startup(self):
     def on_after_startup(self):
-        self._logger.info(
-            "-------------------------------creality cloud stared!------------------"
-        )
+        self._logger.info("creality cloud stared!")
         self._crealitycloud.on_start()
 
     def on_event(self, event, payload):
@@ -75,7 +67,7 @@ class CrealitycloudPlugin(
 
     ##~~ Softwareupdate hook
     def on_print_progress(self, storage, path, progress):
-        print(storage)
+        self._logger.info(storage)
         self._crealitycloud.on_progress(storage, progress)
 
     def get_update_information(self):
@@ -129,7 +121,6 @@ class CrealitycloudPlugin(
         if os.path.exists(self.get_plugin_data_folder() + "/config.json"):
             if not self._crealitycloud.iot_connected:
                 self._logger.info("start iot server")
-                os.system("/usr/bin/sync")
                 self._crealitycloud.device_start()
                 if self._crealitycloud.get_server_region() is not None:
                     country = self._crealitycloud.get_server_region()
@@ -142,33 +133,38 @@ class CrealitycloudPlugin(
         else:
             return {"actived": 0, "iot": False, "printer": False, "country": country}
 
+    #get model config
+    @octoprint.plugin.BlueprintPlugin.route("/setmodelid", methods=["POST"])
+    def test(self):
+        id = request.json["id"]
+        print(id)
+        self.klipper.set_id(id)
+        self.klipper.set_path()
+        self.klipper.change_serial()
+        self.klipper.set_status_json(1)
+        return {"code": "0"}
+    #post firmware name
+    @octoprint.plugin.BlueprintPlugin.route("/getfwname", methods=["GET"])
+    def getfwname(self):
+        fwname = self.klipper.get_fwname()
+        return {'fwname':fwname}
+    #post model.json
+    @octoprint.plugin.BlueprintPlugin.route("/getjson", methods=["GET"])
+    def getjson(self):
+        json = self.klipper.get_json()
+        print(json)
+        return(json)
+
     # get gcode return
     def gCodeHandlerSent(
         self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs
     ):
-        print(cmd)
-        if cmd[0] != "M":
-            return cmd
-        else:
-            if "M220 S" in cmd:
-                self._crealitycloud._aliprinter._curFeedratePct = cmd.lstrip("M220 S")
-                self._crealitycloud._aliprinter._upload_data(
-                    {
-                        "curFeedratePct": int(
-                            self._crealitycloud._aliprinter._curFeedratePct
-                        )
-                    }
-                )
-                print(self._crealitycloud._aliprinter._curFeedratePct)
-            if "M27" in cmd:
-                if "c" in cmd:
-                    return
-                    # filename = cmd.
-                else:
-                    return
+        if gcode == "M220":
+            self._crealitycloud._aliprinter._str_curFeedratePct = cmd
 
     def gCodeHandlerreceived(self, comm_instance, line, *args, **kwargs):
         if "SD printing byte " in line:
+            self._crealitycloud._aliprinter._mcu_is_print = 1
             self._crealitycloud._aliprinter.state = 1
             leftnum = ""
             rightnum = ""
@@ -180,26 +176,21 @@ class CrealitycloudPlugin(
                     break
                 leftnum = leftnum + str(i)
             self._crealitycloud._aliprinter._percent = float(
-                (float(leftnum) / float(rightnum) )* 100
+                (float(leftnum) / float(rightnum)) * 100
             )
             return line
-        if "Current file: " in line:
-            self._crealitycloud._aliprinter._filename = str(str(line).lstrip("Current file: ")).rsplit("\n")
+        elif "Current file: " in line:
+            self._crealitycloud._aliprinter._filename = str(
+                str(line).lstrip("Current file: ")
+            ).rsplit("\n")
             return line
+        elif "Not SD printing" in line:
+            self._crealitycloud._aliprinter._mcu_is_print = 0
         return line
 
 
-# If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
-# ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
-# can be overwritten via __plugin_xyz__ control properties. See the documentation for that.
 __plugin_name__ = "Crealitycloud Plugin"
 
-# Starting with OctoPrint 1.4.0 OctoPrint will also support to run under Python 3 in addition to the deprecated
-# Python 2. New plugins should make sure to run under both versions for now. Uncomment one of the following
-# compatibility flags according to what Python versions your plugin supports!
-# __plugin_pythoncompat__ = ">=2.7,<3" # only python 2
-# __plugin_pythoncompat__ = ">=3,<4" # only python 3
-# __plugin_pythoncompat__ = ">=2.7,<4" # python 2 and 3
 __plugin_pythoncompat__ = ">=3,<4"
 
 
