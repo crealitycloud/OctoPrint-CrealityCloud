@@ -3,7 +3,6 @@ import os
 import subprocess
 import threading
 import time
-from gettext import find
 
 from linkkit import linkkit
 from octoprint.events import Events
@@ -22,14 +21,8 @@ class CrealityCloud(object):
         self._config = CreailtyConfig(plugin)
         self._video_started = False
         self._aliprinter = None
-        self._report_timer = RepeatedTimer(5, self.report_temperatures)
-        self._report_sdprinting_timer = RepeatedTimer(5, self.report_printerstatus)
-        self._check_printer_status = RepeatedTimer(5, self.check_printer_status)
-        self._report_boxversion = RepeatedTimer(5, self.report_boxversion)
-        self._report_curFeedratePct = RepeatedTimer(1, self.gcode_curFeedratePct)
         self._p2p_service_thread = None
         self._video_service_thread = None
-
         self._p2p_service_thread = None
         self._video_service_thread = None
         self._active_service_thread = None
@@ -37,6 +30,17 @@ class CrealityCloud(object):
         self.lk = None
         self.connect_aliyun()
 
+        self._report_timer = RepeatedTimer(5, self.report_temperatures,run_first=True)
+        self._report_sdprinting_timer = RepeatedTimer(5, self.report_printerstatus,run_first=True)
+        self._check_printer_status = RepeatedTimer(5, self.check_printer_status,run_first=True)
+        self._report_boxversion = RepeatedTimer(5, self.report_boxversion,run_first=True)
+        self._report_curFeedratePct = RepeatedTimer(1, self.gcode_curFeedratePct,run_first=True)
+        self._report_timer.start()
+        self._report_sdprinting_timer.start()
+        self._check_printer_status.start()
+        self._report_boxversion.start()
+        self._report_curFeedratePct.start()
+        
     @property
     def iot_connected(self):
         return self._iot_connected
@@ -194,10 +198,6 @@ class CrealityCloud(object):
             self._aliprinter.printId = ""
             self._aliprinter.connect = 1
             self._aliprinter.tfCard = 1
-            self._report_timer.start()
-            self._report_sdprinting_timer.start()
-            self._check_printer_status.start()
-            self._report_curFeedratePct.start()
         else:
             try:
                 self.connect_aliyun()
@@ -213,7 +213,7 @@ class CrealityCloud(object):
             return
 
         if event == "Startup":
-            self._report_boxversion.start()
+
             self._aliprinter.connect = 0
             if os.path.exists("/dev/video0"):
                 self._aliprinter.video = 1
@@ -236,10 +236,6 @@ class CrealityCloud(object):
                 self._logger.info("print failed")
         elif event == Events.DISCONNECTED:
             self._aliprinter.connect = 0
-            self._report_timer.cancel()
-            self._report_sdprinting_timer.cancel()
-            self._check_printer_status.cancel()
-            self._report_curFeedratePct.cancel()
 
         elif event == Events.PRINT_STARTED:
             self._aliprinter.state = 1
@@ -284,6 +280,8 @@ class CrealityCloud(object):
             self._aliprinter.state = 1
 
     def report_printerstatus(self):
+        if self._iot_connected is False or self._aliprinter.connect == 0:
+            return
         self._aliprinter.printer.commands(["M27"])
         self._aliprinter.printer.commands(["M27C"])
         if (
@@ -309,7 +307,7 @@ class CrealityCloud(object):
         return
 
     def report_temperatures(self):
-        if self._iot_connected is False:
+        if self._iot_connected is False or self._aliprinter.connect == 0:
             return
         data = self._octoprinter.get_current_temperatures()
         if not data:
@@ -324,6 +322,8 @@ class CrealityCloud(object):
 
     # Report box version until success
     def report_boxversion(self):
+        if self._iot_connected is False or self._aliprinter.connect == 0:
+            return
         if self._aliprinter.bool_boxVersion != True:
             try:
                 self._aliprinter.boxVersion = self._aliprinter._boxVersion

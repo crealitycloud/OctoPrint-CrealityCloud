@@ -1,7 +1,7 @@
 <div class="container_fluid" id="bindPage" data-bind="text:activedMsg,visible: isAcitived()">
 </div>
 <div data-bind="visible: !isAcitived()">
-  <span>
+  <!-- <span>
     Server location
     <select id="region" data-bind="event:{change:changeRegion}">
       <option value="US">US</option>
@@ -19,9 +19,12 @@
   <div id="qrcode"></div>
   <div id="idCode"></div>
   <div id="bindCrealityCloud"></div>
-  <div data-bind="visible: disabled()">Please use crealitycloud app scan the qrcode or manual input code</div>
+  <div data-bind="visible: disabled()">Please use crealitycloud app scan the qrcode or manual input code</div> -->
+
+  <input id="upload_config" type="file" name="file" accept=".zip">
 </div>
 
+<br>
 <br>
 <label><input name="using klipper" type="checkbox" data-bind="click: clickKlipper,checked:checkKlipper" />using
   klipper</label>

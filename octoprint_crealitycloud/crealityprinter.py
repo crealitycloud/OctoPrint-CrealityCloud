@@ -44,6 +44,7 @@ class CrealityPrinter(object):
 
         self.__linkkit = lk
         self.plugin = plugin
+        self._connected = 0
         self._logger = logging.getLogger("octoprint.plugins.crealityprinter")
         self._config = CreailtyConfig(plugin)
         self._settings = plugin._settings
