@@ -133,6 +133,8 @@ class CrealitycloudPlugin(
         else:
             return {"actived": 0, "iot": False, "printer": False, "country": country}
 
+    #klipper:
+    
     #get model config
     @octoprint.plugin.BlueprintPlugin.route("/setmodelid", methods=["POST"])
     def test(self):
