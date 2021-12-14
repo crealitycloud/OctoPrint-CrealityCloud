@@ -23,7 +23,7 @@ class CrealitycloudPlugin(
     def __init__(self):
         self._logger = logging.getLogger("octoprint.plugins.crealitycloud")
         self._logger.info(
-            "-------------------------------creality cloud init!------------------"
+            "creality cloud init!"
         )
         self.short_code = None
         self._addr = None

@@ -73,6 +73,7 @@ class CrealityPrinter(object):
         self._boxVersion = "rasp_v2.01b99"
         self.bool_boxVersion = None
         self._mcu_is_print = 0
+        self._connected = 0
         self._logger.info("creality crealityprinter init!")
 
     def __setitem__(self, k, v):
