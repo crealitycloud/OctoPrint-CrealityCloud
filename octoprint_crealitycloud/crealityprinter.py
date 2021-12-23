@@ -42,6 +42,13 @@ class ErrorCode(Enum):
 class CrealityPrinter(object):
     def __init__(self, plugin, lk):
 
+        self.data = {}
+
+        self._nozzleTemp = -1
+        self._nozzleTemp2 = -1
+        self._bedTemp = -1
+        self._bedTemp2 = -1
+
         self.__linkkit = lk
         self.plugin = plugin
         self._logger = logging.getLogger("octoprint.plugins.crealityprinter")
@@ -53,13 +60,13 @@ class CrealityPrinter(object):
         self._stop = 0
         self._status = 0
         self._pause = 0
-        self._nozzleTemp2 = -1
-        self._bedTemp2 = -1
+        # self._nozzleTemp2 = -1
+        # self._bedTemp2 = -1
         self._gcodeCmd = None
         self._xcoordinate = None
         self._ycoordinate = None
         self._zcoordinate = None
-        self._position = None
+        self._position = ''
         self._curFeedratePct = 0
         self._str_curFeedratePct = ""
         self._APILicense = None
@@ -74,6 +81,7 @@ class CrealityPrinter(object):
         self.bool_boxVersion = None
         self._mcu_is_print = 0
         self._connected = 0
+        self.app_interface_time = 0
         self._logger.info("creality crealityprinter init!")
 
     def __setitem__(self, k, v):
@@ -81,11 +89,20 @@ class CrealityPrinter(object):
         self.__dict__[k] = v
 
     def _upload_data(self, payload):
+        if not payload:
+            return
         try:
-            self.__linkkit.thing_post_property(payload)
+            self.data.update(payload)
         except Exception as e:
             self._logger.error(str(e))
 
+    def _updata_data(self):
+        if not self.data:
+            return
+        try:
+            self.__linkkit.thing_post_property(self.data)
+        except Exception as e:
+            self._logger.error(str(e))
     @property
     def printId(self):
         return self._printId
@@ -127,6 +144,7 @@ class CrealityPrinter(object):
     # get Position and Feedrate data
     @ReqPrinterPara.setter
     def ReqPrinterPara(self, v):
+        self.app_interface_time = int(time.time())
         self._ReqPrinterPara = int(v)
         if self._ReqPrinterPara == 0:
             self._upload_data({"curFeedratePct": self._curFeedratePct})
@@ -267,14 +285,14 @@ class CrealityPrinter(object):
             self.state = 4
             self.printer.cancel_print()
 
-    @property
-    def nozzleTemp(self):
-        return self._nozzleTemp
+    # @property
+    # def nozzleTemp(self):
+    #     return self._nozzleTemp
 
-    @nozzleTemp.setter
-    def nozzleTemp(self, v):
-        self._nozzleTemp = v
-        self._upload_data({"nozzleTemp": int(self._nozzleTemp)})
+    # @nozzleTemp.setter
+    # def nozzleTemp(self, v):
+    #         self._nozzleTemp = v
+    #         self._upload_data({"nozzleTemp": int(self._nozzleTemp)})
 
     @property
     def nozzleTemp2(self):
@@ -283,18 +301,18 @@ class CrealityPrinter(object):
     @nozzleTemp2.setter
     def nozzleTemp2(self, v):
         if int(v) != self._nozzleTemp2:
-            self._nozzleTemp2 = int(v)
-            self._upload_data({"nozzleTemp2": int(self._nozzleTemp2)})
+            # self._nozzleTemp2 = int(v)
+            # self._upload_data({"nozzleTemp2": int(self._nozzleTemp2)})
             self.printer.set_temperature("tool0", int(v))
 
-    @property
-    def bedTemp(self):
-        return self._bedTemp
+    # @property
+    # def bedTemp(self):
+    #     return self._bedTemp
 
-    @bedTemp.setter
-    def bedTemp(self, v):
-        self._bedTemp = v
-        self._upload_data({"bedTemp": int(self._bedTemp)})
+    # @bedTemp.setter
+    # def bedTemp(self, v):
+    #     self._bedTemp = v
+    #     self._upload_data({"bedTemp": int(self._bedTemp)})
 
     @property
     def bedTemp2(self):
@@ -303,9 +321,9 @@ class CrealityPrinter(object):
     @bedTemp2.setter
     def bedTemp2(self, v):
         if int(v) != self._bedTemp2:
-            self._bedTemp2 = int(v)
-            self._upload_data({"bedTemp2": self._bedTemp2})
-            self.printer.set_temperature("bed", self._bedTemp2)
+            # self._bedTemp2 = int(v)
+            # self._upload_data({"bedTemp2": self._bedTemp2})
+            self.printer.set_temperature("bed", int(v))
 
     @property
     def boxVersion(self):

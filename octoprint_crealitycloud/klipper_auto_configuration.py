@@ -27,7 +27,7 @@ class auto_klipper:
         
     def set_path(self):
         with io.open(
-            os.path.dirname(os.path.abspath(__file__)) + "/model.json",
+            os.path.dirname(os.path.abspath(__file__)) + "/config/model.json",
             "r",
             encoding="utf8",
         ) as _modellist_data:
@@ -87,7 +87,7 @@ class auto_klipper:
     
     def get_json(self):
         with io.open(
-            os.path.dirname(os.path.abspath(__file__)) + "/model.json",
+            os.path.dirname(os.path.abspath(__file__)) + "/config/model.json",
             "r",
             encoding="utf8",
         ) as file_data:
@@ -96,7 +96,7 @@ class auto_klipper:
 
     def set_status_json(self,status):
         with io.open(
-            os.path.dirname(os.path.abspath(__file__)) + "/model.json",
+            os.path.dirname(os.path.abspath(__file__)) + "/config/model.json",
             "r",
             encoding="utf8",
         ) as read_json:
@@ -104,7 +104,7 @@ class auto_klipper:
             data["model"] = self._id
             data['klipperable'] = status
         with io.open(
-            os.path.dirname(os.path.abspath(__file__)) + "/model.json",
+            os.path.dirname(os.path.abspath(__file__)) + "/config/model.json",
             "w",
             encoding="utf8",
         ) as write_json:
