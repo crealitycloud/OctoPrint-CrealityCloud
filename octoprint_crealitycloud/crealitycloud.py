@@ -1,8 +1,11 @@
 import logging
 import os
+import shutil
 import subprocess
 import threading
 import time
+import sys
+from gettext import find
 
 from linkkit import linkkit
 from octoprint.events import Events
@@ -13,7 +16,7 @@ from .crealityprinter import CrealityPrinter, ErrorCode
 
 
 class CrealityCloud(object):
-    def __init__(self, plugin):
+    def __init__(self, plugin, recorderObject):
         # cn-shanghai，us-west-1，ap-southeast-1
         self._logger = logging.getLogger("octoprint.plugins.crealitycloud")
         self.plugin = plugin
@@ -35,6 +38,12 @@ class CrealityCloud(object):
         self._upload_timer = RepeatedTimer(0.5,self._upload_timing,run_first=True)
 
         self.connect_aliyun()
+        self.recorder = recorderObject
+        self.pipe = "/tmp/rpfifo"
+        self.pipein = None
+        self.init_pipe()
+        self._read_pipe_timer = RepeatedTimer(0.5, self.read_pipe_play, run_first=True)
+        self._read_pipe_timer.start()
     @property
     def iot_connected(self):
         return self._iot_connected
@@ -266,11 +275,7 @@ class CrealityCloud(object):
 
     def device_start(self):
         if self.lk is not None:
-            if os.path.exists("/dev/video0"):
-                self._aliprinter.video = 1
-                self.video_start()
-            else:
-                self._aliprinter.video = 0
+            self.video_start()
             self._aliprinter.state = 0
             self._aliprinter.printId = ""
             self._aliprinter.connect = 1
@@ -312,10 +317,15 @@ class CrealityCloud(object):
                 self._logger.info("print failed")
         elif event == Events.DISCONNECTED:
             self._aliprinter.connect = 0
+            self.recorder.stop()
 
         elif event == Events.PRINT_STARTED:
             self._aliprinter.state = 1
-
+            if self._aliprinter.printId != "" and os.path.exists("/dev/video0"):
+                self.recorder.set_printid(self._aliprinter.printId)
+                self.recorder.run()
+                self._logger.info('printid:' + str(self._aliprinter.printId))
+                
         elif event == Events.PRINT_PAUSED:
             self._aliprinter.pause = 1
 
@@ -324,11 +334,13 @@ class CrealityCloud(object):
 
         elif event == Events.PRINT_CANCELLED:
             self.cancelled = True
+            self.recorder.stop()
             self._aliprinter.state = 4
 
         elif event == Events.PRINT_DONE:
             self._aliprinter.state = 2
-
+            self.recorder.stop()
+			
         # get M114 payload
         elif event == Events.POSITION_UPDATE:
             self._aliprinter._xcoordinate = payload["x"]
@@ -407,7 +419,7 @@ class CrealityCloud(object):
 
     def start_p2p_service(self):
         if self._p2p_service_thread is not None:
-            self._p2p_service_thread = None
+            return
         p2p_service_path = (
             os.path.dirname(os.path.abspath(__file__)) + "/bin/p2p_server.sh"
         )
@@ -428,7 +440,7 @@ class CrealityCloud(object):
 
     def start_video_service(self):
         if self._video_service_thread is not None:
-            self._video_service_thread = None
+            return
         video_service_path = (
             os.path.dirname(os.path.abspath(__file__)) + "/bin/rtsp_server.sh"
         )
@@ -442,3 +454,31 @@ class CrealityCloud(object):
     def _runcmd(self, command, env):
         popen = subprocess.Popen(command, env=env)
         return_code = popen.wait()
+
+    def init_pipe(self):
+        if not os.path.exists(self.pipe):
+            os.mkfifo(self.pipe, 0o777)         
+        self.pipein = os.open(self.pipe, os.O_RDONLY | os.O_NONBLOCK)
+
+    def read_pipe_play(self):
+        line = os.read(self.pipein,128)
+        line = line.decode()
+        head = line.find('OPTIONS')
+        stop = line.find('session closed remote')
+        if stop == -1 and head >= 0 :   
+            live = line.find('ch0_0')
+            replay = line.find('rec-tick-')
+            if live > 0:
+                l = threading.Thread(target=self.recorder.play, args=('ch0_0',))
+                l.start()     
+            elif replay > 0:
+                line = line[replay : ]
+                tail = line.find('.h264')
+                line = line[ : tail + 5]
+                #line = line.replace('.h264', '', 1).replace('rec-tick-', '', 1)              
+                if line != 'rec-tick-0.h264':
+                    r = threading.Thread(target=self.recorder.play, args=(line,))
+                    r.start()       
+        # elif stop != -1:
+        #     self.recorder.stop_play()
+        

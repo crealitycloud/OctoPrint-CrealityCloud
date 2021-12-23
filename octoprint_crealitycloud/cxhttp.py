@@ -10,7 +10,7 @@ class CrealityAPI(object):
         self.__overseaurl = "https://model-admin2.creality.com"
         self.__headers = {
             "__CXY_OS_VER_": "v0.0.1",
-            "_CXY_OS_LANG_": "1",
+            "__CXY_OS_LANG_": "1",
             "__CXY_PLATFORM_": "5",
             "__CXY_DUID_": "234",
             "__CXY_APP_ID_": "creality_model",

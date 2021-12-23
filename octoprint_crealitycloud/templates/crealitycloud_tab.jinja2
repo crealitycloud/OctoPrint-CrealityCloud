@@ -1,0 +1,69 @@
+<h1>{{ _('Finished Recorder') }}</h1>
+
+{# <div class="pull-right">
+    <div class="btn-group">
+        <button class="btn btn-small dropdown-toggle" data-toggle="dropdown"><i class="fas fa-wrench"></i> <span class="caret"></span></button>
+        <ul class="dropdown-menu dropdown-menu-right">
+            <li><a href="javascript:void(0)" data-bind="click: function() { listHelper.changeSorting('name'); }"><i class="fas fa-check" data-bind="style: {visibility: listHelper.currentSorting() == 'name' ? 'visible' : 'hidden'}"></i> {{ _('Sort by name') }} ({{ _('ascending') }})</a></li>
+            <li><a href="javascript:void(0)" data-bind="click: function() { listHelper.changeSorting('date'); }"><i class="fas fa-check" data-bind="style: {visibility: listHelper.currentSorting() == 'date' ? 'visible' : 'hidden'}"></i> {{ _('Sort by date') }} ({{ _('descending') }})</a></li>
+            <li><a href="javascript:void(0)" data-bind="click: function() { listHelper.changeSorting('size'); }"><i class="fas fa-check" data-bind="style: {visibility: listHelper.currentSorting() == 'size' ? 'visible' : 'hidden'}"></i> {{ _('Sort by file size') }} ({{ _('descending') }})</a></li>
+        </ul>
+    </div>
+</div>
+<div class="pull-left" data-bind="visible: $root.loginState.hasPermissionKo($root.access.permissions.TIMELAPSE_DELETE)">
+    <div class="btn-group">
+        <button class="btn btn-small dropdown-toggle" data-toggle="dropdown"><i class="far fa-square"></i> <span class="caret"></span></button>
+        <ul class="dropdown-menu">
+            <li><a href="javascript:void(0)" data-bind="click: markFilesOnPage">{{ _('Select all on this page') }}</a></li>
+            <li><a href="javascript:void(0)" data-bind="click: markAllFiles">{{ _('Select all') }}</a></li>
+            <li class="divider"></li>
+            <li><a href="javascript:void(0)" data-bind="click: clearMarkedFiles">{{ _('Clear selection') }}</a></li>
+        </ul>
+    </div>
+    <button class="btn btn-small" data-bind="click: removeMarkedFiles, enable: markedForFileDeletion().length > 0">{{ _('Delete selected') }}</button>
+    <a class="btn btn-small" data-bind="css: { disabled: !enableBulkDownload() }, attr: { href: bulkDownloadButtonUrl }">{{_('Download selected')}}</a>
+</div> #}
+<div>
+    <label data-bind="text: recorderStatus">stop</label>
+    <button type="button" data-bind="click: () => recorderAction('START')">start record</button>
+    <button type="button" data-bind="click: () => recorderAction('STOP')">stop record</button>
+</div>
+<select id="date-list" data-bind="foreach: dateList, event: {change: () => getHourList()}">
+    <option data-bind="text: $data"></option>
+</select>
+<select id="hour-list" data-bind="foreach: hourList, event: {change: () => getVideoList()}">
+    <option data-bind="text: $data"></option>
+</select>
+<table class="table table-striped table-hover table-condensed table-hover" id="recorder_files">
+    <thead>
+    <tr>
+        <th class="timelapse_files_checkbox"></th>
+        <th class="timelapse_files_name">{{ _('Name') }}</th>
+        {# <th class="timelapse_files_size">{{ _('Size') }}</th> #}
+        <th class="timelapse_files_action">{{ _('Action') }}</th>
+    </tr>
+    </thead>
+    <tbody data-bind="foreach: videoList">
+    <tr data-bind="attr: {title: $data}">
+        <td class="timelapse_files_checkbox"><input type="checkbox" data-bind="value: $data, checked: $root.markedForFileDeletion"></td>
+        <td class="timelapse_files_name" data-bind="text: $data"></td>
+        {# <td class="timelapse_files_size" data-bind="text: size"></td> #}
+        <td class="timelapse_files_action">
+            {# <a href="javascript:void(0)" class="far fa-trash-alt" data-bind="click: function() { $parent.removeFile($data.name); }, css: {disabled: !$root.loginState.hasPermissionKo($root.access.permissions.TIMELAPSE_DELETE)() }"></a>&nbsp;|&nbsp;
+            <a href="javascript:void(0)" class="fas fa-download" data-bind="css: {disabled: !$root.loginState.hasPermissionKo($root.access.permissions.TIMELAPSE_DOWNLOAD)()}, attr: { href: ($root.loginState.hasPermission($root.access.permissions.TIMELAPSE_DOWNLOAD)) ? $data.url : 'javascript:void(0)' }"></a>&nbsp;|&nbsp; #}
+            <a href="javascript:void(0)" class="fas fa-camera" data-bind="click: $root.playVideo"></a>
+        </td>
+    </tr>
+    </tbody>
+</table>
+{# <div class="pagination pagination-mini pagination-centered">
+    <ul>
+        <li data-bind="css: {disabled: listHelper.currentPage() === 0}"><a href="javascript:void(0)" data-bind="click: listHelper.prevPage">«</a></li>
+    </ul>
+    <ul data-bind="foreach: listHelper.pages">
+        <li data-bind="css: { active: $data.number === $root.listHelper.currentPage(), disabled: $data.number === -1 }"><a href="javascript:void(0)" data-bind="text: $data.text, click: function() { $root.listHelper.changePage($data.number); }"></a></li>
+    </ul>
+    <ul>
+        <li data-bind="css: {disabled: listHelper.currentPage() === listHelper.lastPage()}"><a href="javascript:void(0)" data-bind="click: listHelper.nextPage">»</a></li>
+    </ul>
+</div> #}
