@@ -81,7 +81,7 @@ class CrealityPrinter(object):
         self._mcu_is_print = 0
         self._connected = 0
         self._state = -1
-        self._printProgress = 0
+        self._printProgress = -1
         self._logger.info("creality crealityprinter init!")
 
     def __setitem__(self, k, v):
