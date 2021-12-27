@@ -93,6 +93,8 @@ class CrealityPrinter(object):
             return
         try:
             self.data.update(payload)
+            if payload.has_key('state'):
+                self._updata_data()
         except Exception as e:
             self._logger.error(str(e))
 
@@ -100,6 +102,7 @@ class CrealityPrinter(object):
         if not self.data:
             return
         try:
+            print(self.data)
             self.__linkkit.thing_post_property(self.data)
         except Exception as e:
             self._logger.error(str(e))

@@ -48,7 +48,6 @@ class CrealityCloud(object):
             
         if self._aliprinter.connect != 1:
             self._logger.info('disconnect printer')
-            self._aliprinter._upload_data({"connect": 0})
             self._aliprinter._updata_data()
             return
 
@@ -111,11 +110,6 @@ class CrealityCloud(object):
         #clean filename and mcu_is_print
         if self._aliprinter._mcu_is_print == 0:
             self._aliprinter._filename = None
-        #updata printer status
-        if self._aliprinter.printer.is_printing() == True:
-            self._aliprinter.state = 1
-        else:
-            self._aliprinter.state = 0
 
         self._aliprinter._upload_data(self.data)
 
