@@ -1,32 +1,33 @@
 <div class="container_fluid" id="bindPage" data-bind="text:activedMsg,visible: isAcitived()">
 </div>
 <div data-bind="visible: !isAcitived()">
-  <span>
-    Server location
-    <select id="region" data-bind="event:{change:changeRegion}">
-      <option value="US">US</option>
-      <option value="China">China</option>
-    </select>
-  </span>
-  <div><a target="view_window" data-bind="attr:{href:appdownloadUrl}">Download crealitycloud app</a></div>
-  <br>
-  <div class="btn_bind" data-bind="visible: !disabled()">
-    <button id="bindbtn" data-bind="click:bind">
-      Click here get bind code
-    </button>
-  </div>
+<span>
+  Server
+  <select id="region" data-bind="event:{change:changeRegion}">
+    <option value ="US">US</option>
+    <option value ="China">China</option>
+  </select>
+</span>
+<div><a target="view_window" data-bind="attr:{href:appdownloadUrl}">Download the Creality Cloud app</a></div>
+<br>
+<div class="btn_bind" data-bind="visible: !disabled()">
+              <button
+                id="bindbtn"
+                data-bind="click:bind"
+              >
+                Click to generate code
+              </button>
+</div>
 
-  <div id="qrcode"></div>
-  <div id="idCode"></div>
-  <div id="bindCrealityCloud"></div>
-  <div data-bind="visible: disabled()">Please use crealitycloud app scan the qrcode or manual input code</div>
-
-  <input id="upload_config" type="file" name="file" accept=".zip">
+<div id="qrcode"></div>
+<div id="idCode"></div>
+<div id="bindCrealityCloud"></div>
+<div data-bind="visible: disabled()">Scan the QR code with the Creality Cloud app or manually enter the code.</div>
 </div>
 
 <br>
 <br>
-<label><input name="using klipper" type="checkbox" data-bind="click: clickKlipper,checked:checkKlipper" />using
+<label><input name="using klipper" type="checkbox" data-bind="click: clickKlipper,checked:checkKlipper" />use
   klipper</label>
 
 <div id="klipper_header" data-bind="visible: Klipperable()">
@@ -34,15 +35,15 @@
   <h3>Klipper Auto Configuration</h3>
   </p>
   <p>
-  <h5>Select your printer model</h5>
+  <h5>Select Your Printer</h5>
   </p>
   <select id="model"
-    data-bind="options: selectData,optionsText: 'model', optionsValue:'id',value: selectmodelData, optionsCaption: '选择固件',event:{change:changemodel}">
+    data-bind="options: selectData,optionsText: 'model', optionsValue:'id',value: selectmodelData, optionsCaption: 'Select...',event:{change:changemodel}">
   </select>
   <p> </p><button id="confirm" data-bind="enable:allowconfirm,click:clickconfirm">confirm</button>
   <br>
   <br>
   <button id="downfw" data-bind="enable:allowdownfw,click:fwdown">
-    Click here download the klipper firmware
+    Download the Klipper firmware
   </button>
 </div>

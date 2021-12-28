@@ -32,10 +32,9 @@ class CrealityCloud(object):
         self._iot_connected = False
         self.lk = None
         self.timer = False
-        self.data = None
         self.connect_printer = False
 
-        self._upload_timer = RepeatedTimer(0.5,self._upload_timing,run_first=True)
+        self._upload_timer = RepeatedTimer(1,self._upload_timing,run_first=True)
 
         self.connect_aliyun()
         self.recorder = recorderObject
@@ -61,7 +60,7 @@ class CrealityCloud(object):
         #upload box verson
         if self._aliprinter.bool_boxVersion != True:
             self._aliprinter.boxVersion = self._aliprinter._boxVersion
-            self.bool_boxVersion = True
+            self._aliprinter.bool_boxVersion = True
 
         #report curFeedratePct
         if self._aliprinter._str_curFeedratePct:
@@ -81,49 +80,20 @@ class CrealityCloud(object):
         else:
             #save tool0 temperatures data
             if temp_data.get('tool0') is not None:
-                self._aliprinter._nozzleTemp = temp_data['tool0'].get('actual')
-                self._aliprinter._nozzleTemp2 = temp_data['tool0'].get('target')
-                self._aliprinter._upload_data({
-                    "nozzleTemp": int(self._aliprinter._nozzleTemp),
-                    "nozzleTemp2": int(self._aliprinter._nozzleTemp2)})
+                self._aliprinter.nozzleTemp = int(temp_data['tool0'].get('actual'))
+                self._aliprinter.nozzleTemp2 = int(temp_data['tool0'].get('target'))
             else:
                 self._logger.info('tool temperature is none')
             #save bed temperatures data
             if temp_data.get('bed') is not None:
-                self._aliprinter._bedTemp = temp_data['bed'].get('actual')
-                self._aliprinter._bedTemp2 = temp_data['bed'].get('target')
-                self._aliprinter._upload_data({
-                    "bedTemp": int(self._aliprinter._bedTemp),
-                    "bedTemp2": int(self._aliprinter._bedTemp2)})
+                self._aliprinter.bedTemp = int(temp_data['bed'].get('actual'))
+                self._aliprinter.bedTemp2 = int(temp_data['bed'].get('target'))
             else:
                 self._logger.info('bed temperature is none')
-
-        #save printer state
 
         #send m27,m27c
         self._aliprinter.printer.commands(['M27'])
         self._aliprinter.printer.commands(['M27C'])
-        #save filename
-        if self._aliprinter._filename is not None:
-            filename = str(self._aliprinter._filename[0])
-            filename = filename.replace("GCO", "gcode")
-        else:
-            filename = ''
-        self._aliprinter._upload_data({
-            "print": str(filename),
-            "printProgress": int(self._aliprinter._percent)})
-        #clean filename and mcu_is_print
-        if self._aliprinter._mcu_is_print == 0:
-            self._aliprinter._filename = None
-        #updata printer status
-        if self._aliprinter.printer.is_printing() == True:
-            self._aliprinter.state = 1
-        else:
-            self._aliprinter.state = 0
-
-        self._aliprinter._upload_data(self.data)
-
-        self._aliprinter._updata_data()
         
         
     def get_server_region(self):
@@ -162,6 +132,7 @@ class CrealityCloud(object):
             self.lk.connect_async()
             self._logger.info("aliyun loop")
             self._aliprinter = CrealityPrinter(self.plugin, self.lk)
+            time.sleep(3)
             if not self.timer:
                 self._upload_timer.start()
                 self.timer = True
@@ -201,7 +172,6 @@ class CrealityCloud(object):
             return alink_data
 
     def on_thing_prop_post(self, request_id, code, data, message, userdata):
-        self._aliprinter.data.clear()
         self._logger.info(
             "on_thing_prop_post request id:%s, code:%d, data:%s message:%s"
             % (request_id, code, str(data), message)
@@ -283,6 +253,7 @@ class CrealityCloud(object):
         else:
             try:
                 self.connect_aliyun()
+                self._aliprinter.state = 0
             except Exception as e:
                 self._logger.error(e)
 

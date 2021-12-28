@@ -272,14 +272,12 @@ class CrealitycloudPlugin(
                     rightnum = rightnum.lstrip("/")
                     break
                 leftnum = leftnum + str(i)
-            self._crealitycloud._aliprinter._percent = float(
+            self._crealitycloud._aliprinter.printProgress = int(
                 (float(leftnum) / float(rightnum)) * 100
             )
             return line
         elif "Current file: " in line:
-            self._crealitycloud._aliprinter._filename = str(
-                str(line).lstrip("Current file: ")
-            ).rsplit("\n")
+            self._crealitycloud._aliprinter.filename = line
             return line
         elif "Not SD printing" in line:
             self._crealitycloud._aliprinter._mcu_is_print = 0
