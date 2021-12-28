@@ -89,7 +89,7 @@ class CrealityPrinter(object):
         if not payload:
             return
         try:
-            print(str(payload))
+            self._logger.info(str(payload))
             self.__linkkit.thing_post_property(payload)
         except Exception as e:
             self._logger.error(str(e))
