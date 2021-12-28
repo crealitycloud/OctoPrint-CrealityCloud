@@ -33,7 +33,7 @@ plugin_url = "https://github.com/crealitycloud/OctoPrint-Crealitycloud"
 plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
-plugin_requires = ["OctoPrint>1.3.8", "aliyun-iot-linkkit==1.2.3"]
+plugin_requires = ["OctoPrint>1.3.8", "aliyun-iot-linkkit==1.2.3", "paho_mqtt==1.5.1"]
 
 ### --------------------------------------------------------------------------------------------------------------------
 ### More advanced options that you usually shouldn't have to touch follow after this point
