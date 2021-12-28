@@ -79,12 +79,6 @@ class CrealityPrinter(object):
         self.bool_boxVersion = None
         self._mcu_is_print = 0
         self._connected = 0
-<<<<<<< HEAD
-        self._state = -1
-        self._printProgress = -1
-=======
-
->>>>>>> 8ca377a (fix some issue)
         self._logger.info("creality crealityprinter init!")
 
     def __setitem__(self, k, v):
@@ -100,14 +94,6 @@ class CrealityPrinter(object):
         except Exception as e:
             self._logger.error(str(e))
 
-    def _updata_data(self):
-        if not self.data:
-            return
-        try:
-            print(self.data)
-            self.__linkkit.thing_post_property(self.data)
-        except Exception as e:
-            self._logger.error(str(e))
     @property
     def printId(self):
         return self._printId
