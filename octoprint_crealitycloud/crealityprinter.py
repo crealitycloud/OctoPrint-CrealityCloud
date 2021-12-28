@@ -17,7 +17,6 @@ import octoprint.slicing
 import octoprint.util
 import psutil
 import requests
-from octoprint import printer
 from octoprint.events import Events, eventManager
 from octoprint.filemanager.destinations import FileDestinations
 
@@ -49,6 +48,8 @@ class CrealityPrinter(object):
         self._nozzleTemp2 = -1
         self._bedTemp = -1
         self._bedTemp2 = -1
+        self._state = -1
+        self._printProgress = -1
 
         self.__linkkit = lk
         self.plugin = plugin
@@ -59,7 +60,6 @@ class CrealityPrinter(object):
         self._filecontrol = filecontrol(plugin)
         self.Filemanager = self._filecontrol.Filemanager
         self._stop = 0
-        self._status = 0
         self._pause = 0
         self._gcodeCmd = None
         self._xcoordinate = None
@@ -74,14 +74,17 @@ class CrealityPrinter(object):
         self._dProgress = 0
         self._reqGcodeFile = None
         self._opGcodeFile = None
-        self._percent = 0
         self._filename = None
         self._boxVersion = "rasp_v2.01b99"
         self.bool_boxVersion = None
         self._mcu_is_print = 0
         self._connected = 0
+<<<<<<< HEAD
         self._state = -1
         self._printProgress = -1
+=======
+
+>>>>>>> 8ca377a (fix some issue)
         self._logger.info("creality crealityprinter init!")
 
     def __setitem__(self, k, v):
@@ -89,16 +92,6 @@ class CrealityPrinter(object):
         self.__dict__[k] = v
 
     def _upload_data(self, payload):
-        # if not payload:
-        #     return
-        # try:
-        #     self.data.update(payload)
-        #     if (
-        #         'state' in payload or
-        #         'connect' in payload) :
-        #         self._updata_data()
-        # except Exception as e:
-        #     self._logger.error(str(e))
         if not payload:
             return
         try:

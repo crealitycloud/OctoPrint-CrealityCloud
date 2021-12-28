@@ -38,7 +38,7 @@ $(function () {
         success: function (data) {
           if (data.actived == 1) {
             self.isAcitived(true);
-            self.activedMsg("Machine has actived on " + data.country + " server")
+            self.activedMsg("Raspberry Pi has been activated on the " + data.country + " server")
             self.HAS_WAIT_TIMEOUT = self.WAIT_TIMEOUT
           } else {
             self.isAcitived(false);
@@ -81,7 +81,7 @@ $(function () {
       if (self.HAS_WAIT_TIMEOUT < self.WAIT_TIMEOUT) {
         self.HAS_WAIT_TIMEOUT = self.HAS_WAIT_TIMEOUT + 3;
         setTimeout(function () { self.waitTimout(); }, 3000)
-        $("#bindCrealityCloud").html("reflush after " + (self.WAIT_TIMEOUT - self.HAS_WAIT_TIMEOUT) + "s")
+        $("#bindCrealityCloud").html("Refersh in " + (self.WAIT_TIMEOUT - self.HAS_WAIT_TIMEOUT) + "seconds")
       } else {
         self.HAS_WAIT_TIMEOUT = 0;
         self.disabled(false);
