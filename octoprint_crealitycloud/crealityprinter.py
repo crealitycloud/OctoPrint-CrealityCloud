@@ -79,6 +79,7 @@ class CrealityPrinter(object):
         self.bool_boxVersion = None
         self._mcu_is_print = 0
         self._connected = 0
+        self._state_time = 0
         self._logger.info("creality crealityprinter init!")
 
     def __setitem__(self, k, v):
@@ -217,6 +218,7 @@ class CrealityPrinter(object):
         if int(v) != int(self._state):
             self._state = v
             self._upload_data({"state": self._state})
+            self._state_time = int(time.time())
 
     @property
     def dProgress(self):

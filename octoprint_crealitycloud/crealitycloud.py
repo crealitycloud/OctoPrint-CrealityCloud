@@ -86,8 +86,16 @@ class CrealityCloud(object):
         #send m27,m27c
         self._aliprinter.printer.commands(['M27'])
         self._aliprinter.printer.commands(['M27C'])
-        
-        
+
+        #check printer state
+        if (
+                self._aliprinter.mcu_is_print==0 
+            and not self._aliprinter.printer.is_printing() 
+            and int(time.time())-self._aliprinter._state_time > 5
+            ):
+            self._aliprinter.state = 0
+            self._aliprinter.printId = '0'
+
     def get_server_region(self):
         if self.config_data.get("region") is not None:
             if self.config_data["region"] == 0:
