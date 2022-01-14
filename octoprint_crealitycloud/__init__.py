@@ -3,6 +3,8 @@ from __future__ import absolute_import
 
 import logging
 import os
+import json
+import io
 import re
 
 import octoprint.plugin
@@ -72,7 +74,6 @@ class CrealitycloudPlugin(
 
     ##~~ Softwareupdate hook
     def on_print_progress(self, storage, path, progress):
-        self._logger.info(storage)
         self._crealitycloud.on_progress(storage, progress)
 
     def get_update_information(self):
@@ -103,24 +104,30 @@ class CrealitycloudPlugin(
             js=["js/crealitycloud.js", "js/qrcode.min.js", "js/crealitycloudlive.js"], css=["css/crealitycloud.css"]
         )
 
-    @octoprint.plugin.BlueprintPlugin.route("/makeQR", methods=["GET", "POST"])
-    def make_qr(self):
-        if os.path.exists(self.get_plugin_data_folder() + "/code"):
-            os.remove(self.get_plugin_data_folder() + "/code")
-        country = request.json["country"]
-        self._crealitycloud.start_active_service(country)
-        return {"code": 0}
-
-    @octoprint.plugin.BlueprintPlugin.route("/machineqr", methods=["GET"])
-    def get_machine_short_id(self):
-        code_path = self.get_plugin_data_folder() + "/code"
-        if os.path.exists(code_path):
-            with open(code_path, "r") as f:
-                self.short_code = f.readline()
-                f.close()
-                return {"code": self.short_code}
-        else:
-            return {"code": "0"}
+    #get token
+    @octoprint.plugin.BlueprintPlugin.route("/get_token", methods=["POST"])
+    def get_token(self):
+        try:
+            self._res = self._cxapi.getconfig(request.json["token"])["result"]
+            if self._res["regionId"] == 0:
+                region = 0
+            else:
+                region = 1
+            self._config = {
+                "deviceName": self._res["deviceName"],
+                "deviceSecret": self._res["deviceSecret"],
+                "productKey": self._res["productKey"],
+                "region": region
+                }
+            with io.open(
+                self.get_plugin_data_folder()+'/config.json', "w", encoding="utf-8"
+            ) as config_file:
+                json.dump(self._config,config_file, indent=2, separators=(',',':'))
+                self._logger.info(self._config)
+            return {"code": 0}
+        except Exception as e:
+            self._logger.error(str(e))
+            return {"code": -1}
 
     @octoprint.plugin.BlueprintPlugin.route("/status", methods=["GET"])
     def get_status(self):
@@ -260,8 +267,12 @@ class CrealitycloudPlugin(
             self._crealitycloud._aliprinter._str_curFeedratePct = cmd
 
     def gCodeHandlerreceived(self, comm_instance, line, *args, **kwargs):
+        leftnum = 0
+        rightnum = 0
+        if not self._crealitycloud._iot_connected:
+            return line
         if "SD printing byte " in line:
-            self._crealitycloud._aliprinter._mcu_is_print = 1
+            self._crealitycloud._aliprinter.mcu_is_print = 1
             self._crealitycloud._aliprinter.state = 1
             leftnum = ""
             rightnum = ""
@@ -280,7 +291,22 @@ class CrealitycloudPlugin(
             self._crealitycloud._aliprinter.filename = line
             return line
         elif "Not SD printing" in line:
-            self._crealitycloud._aliprinter._mcu_is_print = 0
+            if (
+                    self._crealitycloud._aliprinter.mcu_is_print == 1
+                and not self._crealitycloud._aliprinter.printer.is_printing()
+            ):
+                
+                if (
+                    not self._crealitycloud._aliprinter.printId
+                    and ((float(leftnum) / float(rightnum)) * 100) > 99.9
+                ):
+                    self._crealitycloud._aliprinter.state = 2
+                    self._crealitycloud._aliprinter.printProgress = 0
+                else:
+                    self._crealitycloud._aliprinter.state = 0
+                    self._crealitycloud._aliprinter.printProgress = 0
+                self._crealitycloud._aliprinter.mcu_is_print == 0
+                
         return line
 
 
