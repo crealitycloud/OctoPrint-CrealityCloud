@@ -252,23 +252,22 @@ class CrealityCloud(object):
         self._logger.info("video service started")
 
     def device_start(self):
-        if self.lk is not None:
-            if os.path.exists("/dev/video0"):
-                self._aliprinter.video = 1
-                self.video_start()
-            else:
-                self._aliprinter.video = 0
-        else:
+        if self.lk is None:
             try:
                 self.connect_aliyun()
             except Exception as e:
                 self._logger.error(e)
-        if self.lk is not None:
-            self._aliprinter.state = 0
-            self._aliprinter.printId = ""
-            self._aliprinter.connect = 1
-            self._aliprinter.tfCard = 1
-            self._aliprinter.printer.commands(['M115'])
+
+        self._aliprinter.state = 0
+        self._aliprinter.printId = ""
+        self._aliprinter.connect = 1
+        self._aliprinter.tfCard = 1
+        self._aliprinter.printer.commands(['M115'])
+        if os.path.exists("/dev/video0"):
+            self._aliprinter.video = 1
+            self.video_start()
+        else:
+            self._aliprinter.video = 0
 
     def on_event(self, event, payload):
 
