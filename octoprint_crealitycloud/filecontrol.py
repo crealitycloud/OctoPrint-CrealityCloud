@@ -106,9 +106,10 @@ class filecontrol(object):
                         oldname = newname
                         newname = ""
                 target = FileDestinations.LOCAL
-                oldname = self.Filemanager.path_on_disk(target, oldname)
-                newname = self.Filemanager.path_on_disk(target, newname)
-                try:
-                    os.rename(oldname, newname)
-                except Exception as e:
-                    self._logger.error(e)
+                if self.Filemanager.file_exists(FileDestinations.LOCAL,oldname) and not self.Filemanager.file_exists(FileDestinations.LOCAL,newname):
+                    oldname = self.Filemanager.path_on_disk(target, oldname)
+                    newname = self.Filemanager.path_on_disk(target, newname)
+                    try:
+                        os.rename(oldname, newname)
+                    except Exception as e:
+                        self._logger.error(e)
