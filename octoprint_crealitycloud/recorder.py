@@ -31,7 +31,7 @@ class Recorder(object):
         self.timer = None
         self.ffmpeg = None
         self._logger = logging.getLogger("octoprint.plugins.crealitycloudrecorder")
-        self._limit_size = 500 * 1024 * 1024 # limit size 1000M
+        self._limit_size = 500 # limit size 500MB
         self._printid = None
         self._recorder_file_path = os.path.expanduser('~') + "/" + "creality_recorder"
         self._recorder_list_path = os.path.expanduser('~') + "/" + "creality_recorder" + "/" + "vlist.json"
