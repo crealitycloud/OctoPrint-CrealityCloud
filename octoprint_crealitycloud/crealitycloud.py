@@ -1,11 +1,13 @@
 import logging
 import os
+import shutil
 import subprocess
 import threading
 import time
+import sys
+from gettext import find
 
 from linkkit import linkkit
-from octoprint.cli.client import upload
 from octoprint.events import Events
 from octoprint.util import RepeatedTimer
 
@@ -14,7 +16,7 @@ from .crealityprinter import CrealityPrinter, ErrorCode
 
 
 class CrealityCloud(object):
-    def __init__(self, plugin):
+    def __init__(self, plugin, recorderObject):
         # cn-shanghai，us-west-1，ap-southeast-1
         self._logger = logging.getLogger("octoprint.plugins.crealitycloud")
         self.plugin = plugin
@@ -29,90 +31,77 @@ class CrealityCloud(object):
         self._active_service_thread = None
         self._iot_connected = False
         self.lk = None
-        self.connect_aliyun()
+        self.timer = False
+        self.connect_printer = False
+        self.model = ''
+        self._printer_disconnect = False
 
-        self._check_printer_status = RepeatedTimer(10, self.check_printer_status,run_first=True)
-        self._report_boxversion = RepeatedTimer(10, self.report_boxversion,run_first=True)
-        self._report_curFeedratePct = RepeatedTimer(5, self.gcode_curFeedratePct,run_first=True)
-        self._upload_timer = RepeatedTimer(5,self._upload_data,run_first=True)
-        self._check_printer_status.start()
-        self._report_boxversion.start()
-        self._report_curFeedratePct.start()
-        self._upload_timer.start()
-        
+        self._upload_timer = RepeatedTimer(2,self._upload_timing,run_first=True)
+        self._upload_ip_timer = RepeatedTimer(30,self._upload_ip_timing,run_first=False)
+        self._send_M27_timer = RepeatedTimer(10,self._send_M27_timing,run_first=False)
+
+        self.connect_aliyun()
+        self.recorder = recorderObject
+        self.pipe = "/tmp/rpfifo"
+        self.pipein = None
+        self.init_pipe()
+        self._read_pipe_timer = RepeatedTimer(0.5, self.read_pipe_play, run_first=True)
+        self._read_pipe_timer.start()
     @property
     def iot_connected(self):
         return self._iot_connected
 
-    def _upload_data (self):
-        if self._aliprinter.connect == 0:
-            return
-        if self._iot_connected == False:
+    def _send_M27_timing(self):
+        self._aliprinter.printer.commands(['M27'])
+        self._aliprinter.printer.commands(['M27C'])
+
+    def _upload_ip_timing(self):
+        self._aliprinter.ipAddress
+        self._upload_ip_timer.cancel()
+
+    def _upload_timing(self):
+            
+        if self._aliprinter.printer.is_closed_or_error():
+            if not self._printer_disconnect:
+                self._logger.info('disconnect printer or printer error')
+                self._printer_disconnect = True
             return
 
-        #upload temperatures
-        data = self._octoprinter.get_current_temperatures()
-        if not data:
+        self._printer_disconnect = False
+        #upload box verson
+        if self._aliprinter.bool_boxVersion != True:
+            self._aliprinter.boxVersion = self._aliprinter._boxVersion
+            self._aliprinter.bool_boxVersion = True
+
+        #report curFeedratePct
+        if self._aliprinter._str_curFeedratePct:
+            try:
+                S_location = self._aliprinter._str_curFeedratePct.find("S")
+                int_curfeedratepct = self._aliprinter._str_curFeedratePct[
+                    S_location + 1 : len(self._aliprinter._str_curFeedratePct)
+                ]
+                self._aliprinter.curFeedratePct = int(int_curfeedratepct)
+            except Exception as e:
+                self._logger.error(e)
+
+        #get temperatures data
+        temp_data = self._octoprinter.get_current_temperatures()
+        if not temp_data:
             self._logger.info("can't get temperatures")
         else:
-
-            #upload tool temperature
-            if data.get("tool0") is not None:
-                try:
-                    tool_actual_tmp = data["tool0"].get("actual")
-                    tool_target_tmp = data["tool0"].get("target")
-                    self._aliprinter.nozzleTemp = tool_actual_tmp
-                    self._aliprinter.nozzleTemp2 = tool_target_tmp
-                except Exception as e:
-                    self._logger.error(str(e))
+            #save tool0 temperatures data
+            if temp_data.get('tool0') is not None:
+                self._aliprinter.nozzleTemp = int(temp_data['tool0'].get('actual'))
+                self._aliprinter.nozzleTemp2 = int(temp_data['tool0'].get('target'))
             else:
-                self._logger.info("tool temperature is none")
-
-            #upload bed temperature
-            if data.get("bed") is not None:
-                try:
-                    bed_actual_tmp = data["bed"].get("actual")
-                    bed_target_tmp = data["bed"].get("target")
-                    self._aliprinter.bedTemp = bed_actual_tmp
-                    self._aliprinter.bedTemp2 = bed_target_tmp
-                except Exception as e:
-                    self._logger.error(str(e))
+                self._logger.info('tool temperature is none')
+            #save bed temperatures data
+            if temp_data.get('bed') is not None:
+                self._aliprinter.bedTemp = int(temp_data['bed'].get('actual'))
+                self._aliprinter.bedTemp2 = int(temp_data['bed'].get('target'))
             else:
-                self._logger.info("bed temperature is none")
+                self._logger.info('bed temperature is none')
 
-        #upload printerstatus
-        #send m27,m27c
-        self._aliprinter.printer.commands(["M27"])
-        self._aliprinter.printer.commands(["M27C"])
-        if (
-                self._aliprinter._filename
-            and self._aliprinter._percent
-            and self._aliprinter._mcu_is_print != 0
-        ):
-            try:
-                filename = str(self._aliprinter._filename[0])
-                filename = filename.replace("GCO", "gcode")
-                self._aliprinter._upload_data({"print": filename})
-                self._aliprinter._upload_data(
-                    {"printProgress": int(self._aliprinter._percent)}
-                )
-                self._aliprinter._upload_data(
-                    {"mcu_is_print": self._aliprinter._mcu_is_print}
-                )
-            except Exception as e:
-                    self._logger.error(str(e))
-        elif self._aliprinter._mcu_is_print == 0:
-            try:
-                self._aliprinter._upload_data(
-                    {"mcu_is_print": str(self._aliprinter._mcu_is_print)}
-                )
-                #clean filename and mcu_is_print
-                self._aliprinter._filename = ""
-                self._aliprinter._mcu_is_print = ""
-            except Exception as e:
-                    self._logger.error(str(e))
-        
-        
     def get_server_region(self):
         if self.config_data.get("region") is not None:
             if self.config_data["region"] == 0:
@@ -149,6 +138,13 @@ class CrealityCloud(object):
             self.lk.connect_async()
             self._logger.info("aliyun loop")
             self._aliprinter = CrealityPrinter(self.plugin, self.lk)
+            time.sleep(3)
+            self._upload_ip_timer.start()
+            if not self.timer:
+                self._upload_timer.start()
+                self._send_M27_timer.start()
+                self.timer = True
+
 
     def region_to_string(self, num):
         regions = {
@@ -184,13 +180,10 @@ class CrealityCloud(object):
             return alink_data
 
     def on_thing_prop_post(self, request_id, code, data, message, userdata):
-        if message == 'success':
-            return
-        else:
-            self._logger.info(
-                "on_thing_prop_post request id:%s, code:%d, data:%s message:%s"
-                % (request_id, code, str(data), message)
-            )
+        self._logger.info(
+            "on_thing_prop_post request id:%s, code:%d, data:%s message:%s"
+            % (request_id, code, str(data), message)
+        )
 
     def on_device_dynamic_register(self, rc, value, userdata):
         if rc == 0:
@@ -259,26 +252,30 @@ class CrealityCloud(object):
         self._logger.info("video service started")
 
     def device_start(self):
-        if self.lk is not None:
-            if os.path.exists("/dev/video0"):
-                self._aliprinter.video = 1
-                self.video_start()
-            else:
-                self._aliprinter.video = 0
-            self._aliprinter.state = 0
-            self._aliprinter.printId = ""
-            self._aliprinter.connect = 1
-            self._aliprinter.tfCard = 1
-        else:
+        if self.lk is None:
             try:
                 self.connect_aliyun()
             except Exception as e:
                 self._logger.error(e)
 
+        self._aliprinter.state = 0
+        self._aliprinter.printId = ""
+        self._aliprinter.connect = 1
+        self._aliprinter.tfCard = 1
+        self._aliprinter.printer.commands(['M115'])
+        if not self._aliprinter.printer.is_closed_or_error():
+            self._aliprinter.connect = 1
+        if os.path.exists("/dev/video0"):
+            self._aliprinter.video = 1
+            self.video_start()
+        else:
+            self._aliprinter.video = 0
+
     def on_event(self, event, payload):
 
         if event == Events.CONNECTED:
             self.device_start()
+
 
         if not self._iot_connected:
             return
@@ -291,9 +288,9 @@ class CrealityCloud(object):
 
         elif event == Events.FIRMWARE_DATA:
             if "MACHINE_TYPE" in payload["data"]:
-                machine_type = payload["data"]["MACHINE_TYPE"]
+                self.model = payload["data"]["MACHINE_TYPE"]
                 if self.lk is not None:
-                    self._aliprinter.model = machine_type
+                    self._aliprinter.model = self.model
 
         elif event == "DisplayLayerProgress_layerChanged":
             self._aliprinter.layer = int(payload["currentLayer"])
@@ -303,14 +300,21 @@ class CrealityCloud(object):
             if self._aliprinter.stop == 0:
                 self._aliprinter.state = 3
                 self._aliprinter.error = ErrorCode.PRINT_DISCONNECT.value
-                self._aliprinter.printId = ""
+                self._aliprinter._printId = ""
                 self._logger.info("print failed")
         elif event == Events.DISCONNECTED:
             self._aliprinter.connect = 0
+            self.recorder.stop()
 
         elif event == Events.PRINT_STARTED:
+            if not self._aliprinter.printId:
+                self._aliprinter.mcu_is_print = 1
             self._aliprinter.state = 1
-
+            if self._aliprinter.printId != "" and os.path.exists("/dev/video0"):
+                self.recorder.set_printid(self._aliprinter.printId)
+                self.recorder.run()
+                self._logger.info('printid:' + str(self._aliprinter.printId))
+                
         elif event == Events.PRINT_PAUSED:
             self._aliprinter.pause = 1
 
@@ -319,16 +323,21 @@ class CrealityCloud(object):
 
         elif event == Events.PRINT_CANCELLED:
             self.cancelled = True
-            self._aliprinter.state = 4
+            self._aliprinter._upload_data({"err": 1, "stop": 1, "state": 4, "printId": self._aliprinter._printId})
+            if not self._aliprinter.printId:
+                self._aliprinter.mcu_is_print = 0
+            self._aliprinter._printId = ""
+            self.recorder.stop()
 
         elif event == Events.PRINT_DONE:
             self._aliprinter.state = 2
-
+            self.recorder.stop()
+            if not self._aliprinter.printId:
+                self._aliprinter.mcu_is_print = 0
+            self._aliprinter._printId = ""
+			
         # get M114 payload
         elif event == Events.POSITION_UPDATE:
-            self._aliprinter._xcoordinate = payload["x"]
-            self._aliprinter._ycoordinate = payload["y"]
-            self._aliprinter._zcoordinate = payload["z"]
             self._aliprinter._position = (
                 "X:"
                 + str(payload["x"])
@@ -337,11 +346,7 @@ class CrealityCloud(object):
                 + " Z:"
                 + str(payload["z"])
             )
-
-        # get local ip address
-        elif event == Events.CONNECTIVITY_CHANGED:
-            if payload["new"] == True:
-                self._aliprinter.ipAddress
+            self._aliprinter._upload_data({"curPosition": self._aliprinter._position})
 
     def on_progress(self, fileid, progress):
         self._aliprinter.printProgress = progress
@@ -402,7 +407,7 @@ class CrealityCloud(object):
 
     def start_p2p_service(self):
         if self._p2p_service_thread is not None:
-            self._p2p_service_thread = None
+            return
         p2p_service_path = (
             os.path.dirname(os.path.abspath(__file__)) + "/bin/p2p_server.sh"
         )
@@ -423,7 +428,7 @@ class CrealityCloud(object):
 
     def start_video_service(self):
         if self._video_service_thread is not None:
-            self._video_service_thread = None
+            return
         video_service_path = (
             os.path.dirname(os.path.abspath(__file__)) + "/bin/rtsp_server.sh"
         )
@@ -437,3 +442,31 @@ class CrealityCloud(object):
     def _runcmd(self, command, env):
         popen = subprocess.Popen(command, env=env)
         return_code = popen.wait()
+
+    def init_pipe(self):
+        if not os.path.exists(self.pipe):
+            os.mkfifo(self.pipe, 0o777)         
+        self.pipein = os.open(self.pipe, os.O_RDONLY | os.O_NONBLOCK)
+
+    def read_pipe_play(self):
+        line = os.read(self.pipein,128)
+        line = line.decode()
+        head = line.find('OPTIONS')
+        stop = line.find('session closed remote')
+        if stop == -1 and head >= 0 :   
+            live = line.find('ch0_0')
+            replay = line.find('rec-tick-')
+            if live > 0:
+                l = threading.Thread(target=self.recorder.play, args=('ch0_0',))
+                l.start()     
+            elif replay > 0:
+                line = line[replay : ]
+                tail = line.find('.h264')
+                line = line[ : tail + 5]
+                #line = line.replace('.h264', '', 1).replace('rec-tick-', '', 1)              
+                if line != 'rec-tick-0.h264':
+                    r = threading.Thread(target=self.recorder.play, args=(line,))
+                    r.start()       
+        # elif stop != -1:
+        #     self.recorder.stop_play()
+        
