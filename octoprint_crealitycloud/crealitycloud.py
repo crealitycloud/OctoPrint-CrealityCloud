@@ -263,6 +263,8 @@ class CrealityCloud(object):
         self._aliprinter.connect = 1
         self._aliprinter.tfCard = 1
         self._aliprinter.printer.commands(['M115'])
+        if not self._aliprinter.printer.is_closed_or_error():
+            self._aliprinter.connect = 1
         if os.path.exists("/dev/video0"):
             self._aliprinter.video = 1
             self.video_start()
