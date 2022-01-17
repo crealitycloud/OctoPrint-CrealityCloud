@@ -240,9 +240,10 @@ class CrealityCloud(object):
         if self.lk is not None:
             self._aliprinter.state = 0
             self._aliprinter.printId = ""
-            self._aliprinter.connect = 1
             self._aliprinter.tfCard = 1
             self._aliprinter.printer.commands(['M115'])
+            if not self._aliprinter.printer.is_closed_or_error():
+                self._aliprinter.connect = 1
 
     def on_event(self, event, payload):
 
