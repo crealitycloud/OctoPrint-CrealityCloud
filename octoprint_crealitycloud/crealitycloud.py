@@ -244,6 +244,8 @@ class CrealityCloud(object):
             self._aliprinter.printer.commands(['M115'])
             if not self._aliprinter.printer.is_closed_or_error():
                 self._aliprinter.connect = 1
+            else:
+                self._aliprinter.connect = 0
 
     def on_event(self, event, payload):
 
