@@ -109,10 +109,7 @@ class CrealitycloudPlugin(
     def get_token(self):
         try:
             self._res = self._cxapi.getconfig(request.json["token"])["result"]
-            if self._res["regionId"] == 0:
-                region = 0
-            else:
-                region = 1
+            region = self._res["regionId"]
             self._config = {
                 "deviceName": self._res["deviceName"],
                 "deviceSecret": self._res["deviceSecret"],
