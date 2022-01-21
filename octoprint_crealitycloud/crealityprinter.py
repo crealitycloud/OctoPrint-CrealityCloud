@@ -247,17 +247,16 @@ class CrealityPrinter(object):
 
     @pause.setter
     def pause(self, v):
-        if int(v) != self._pause:
-            self._pause = int(v)
-            self._upload_data({"pause": self._pause})
-            if self._pause == 0:
-                if self.printer.is_paused():
-                    self.printer.resume_print()
-                    self.state = 1
-            if self._pause == 1:
-                if not self.printer.is_paused():
-                    self.printer.pause_print()
-                    self.state = 5
+        self._pause = int(v)
+        self._upload_data({"pause": self._pause})
+        if self._pause == 0:
+            if self.printer.is_paused():
+                self.printer.resume_print()
+                self.state = 1
+        if self._pause == 1:
+            if not self.printer.is_paused():
+                self.printer.pause_print()
+                self.state = 5
 
     @property
     def tfCard(self):
