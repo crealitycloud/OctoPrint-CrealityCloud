@@ -159,9 +159,8 @@ class CrealitycloudPlugin(
                     rightnum = rightnum.lstrip("/")
                     break
                 leftnum = leftnum + str(i)
-            self._crealitycloud._aliprinter.printProgress = int(
-                (float(leftnum) / float(rightnum)) * 100
-            )
+            self._crealitycloud._aliprinter.printProgress = (float(leftnum) / float(rightnum)) * 100
+            
             return line
         elif "Current file: " in line:
             self._crealitycloud._aliprinter.filename = line

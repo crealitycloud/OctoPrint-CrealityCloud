@@ -74,6 +74,10 @@ class CrealityPrinter(object):
         self._DIDString = None
         self.bool_boxVersion = None
         self._str_curFeedratePct = ""
+        self._printJobTime = 0
+        self._printLeftTime = 0
+        self._printStartTime = 0
+        self._printTime = 0
         self._logger.info("creality crealityprinter init!")
 
     def __setitem__(self, k, v):
@@ -349,13 +353,13 @@ class CrealityPrinter(object):
 
     @property
     def printProgress(self):
-        return ""
+        return self._printProgress
 
     @printProgress.setter
     def printProgress(self, v):
-        if int(v) != self._printProgress:
+        if v != self._printProgress:
             self._printProgress = v
-            self._upload_data({"printProgress": self._printProgress})
+            self._upload_data({"printProgress": int(self._printProgress)})
 
     @property
     def layer(self):
@@ -583,3 +587,27 @@ class CrealityPrinter(object):
                 )
         else:
             self._filecontrol.controlfiles(v)
+
+    @property
+    def printJobTime(self):
+        return self._printJobTime
+
+    @printJobTime.setter
+    def printJobTime(self, v):
+        if self._printJobTime == int(v):
+            return
+        else:
+            self._printJobTime = int(v)
+            self._upload_data({"printJobTime": self._printJobTime})
+
+    @property
+    def printLeftTime(self):
+        return self._printLeftTime
+
+    @printLeftTime.setter
+    def printLeftTime(self, v):
+        if self._printLeftTime == int(v):
+            return
+        else:
+            self._printLeftTime = int(v)
+            self._upload_data({"printLeftTime": self._printLeftTime})
