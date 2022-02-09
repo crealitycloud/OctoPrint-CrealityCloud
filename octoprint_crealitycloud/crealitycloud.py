@@ -1,5 +1,6 @@
 import logging
 import os
+import io
 import subprocess
 import threading
 import time
@@ -10,7 +11,20 @@ from octoprint.util import RepeatedTimer
 
 from .config import CreailtyConfig
 from .crealityprinter import CrealityPrinter, ErrorCode
+from octoprint.printer import PrinterCallback
 
+class ProgressMonitor(PrinterCallback):
+    def __init__(self, *args, **kwargs):
+        super(ProgressMonitor, self).__init__(*args, **kwargs)
+        self.reset()
+
+    def reset(self):
+        self.printJobTime = None
+        self.printLeftTime = None
+
+    def on_printer_send_current_data(self, data):
+        self.printJobTime = data["progress"]["printTime"]
+        self.printLeftTime = data["progress"]["printTimeLeft"]
 
 class CrealityCloud(object):
     def __init__(self, plugin):
@@ -94,6 +108,29 @@ class CrealityCloud(object):
             else:
                 self._logger.info('bed temperature is none')
 
+        #get print time
+        if self._aliprinter.printer.is_printing():
+            if self._progress.printJobTime is not None:
+                self._aliprinter.printJobTime = int(self._progress.printJobTime)
+                if self._progress.printLeftTime is not None:
+                    self._aliprinter.printLeftTime = int(self._progress.printLeftTime)
+                else:
+                    if self._aliprinter._printTime > 0:
+                        self._aliprinter.printLeftTime = int(self._aliprinter._printTime) - int(self._progress.printJobTime)
+                    else:
+                        try:
+                            path = self._aliprinter.plugin._file_manager.path_on_disk(self.print_origin,self.print_path)
+                            with io.open(path, mode="r", encoding="utf8", errors="replace") as file:
+                                for line in file.readlines():
+                                    if line[0] != ';':
+                                        break
+                                    else:
+                                        if "TIME" in line:
+                                            self._aliprinter._printTime = int(line.replace(";TIME:", ""))
+                        except:
+                            self._aliprinter.printLeftTime = 0
+            else:
+                self._aliprinter.printJobTime = 0
     def get_server_region(self):
         if self.config_data.get("region") is not None:
             if self.config_data["region"] == 0:
@@ -130,6 +167,10 @@ class CrealityCloud(object):
             self.lk.connect_async()
             self._logger.info("aliyun loop")
             self._aliprinter = CrealityPrinter(self.plugin, self.lk)
+
+            self._progress = ProgressMonitor()
+            self._aliprinter.printer.register_callback(self._progress)
+
             time.sleep(3)
             self._upload_ip_timer.start()
             if not self.timer:
@@ -286,6 +327,13 @@ class CrealityCloud(object):
                 self._aliprinter.mcu_is_print = 1
             self._aliprinter.state = 1
 
+            self.print_path = payload["path"]
+            self.print_origin = payload["origin"]
+            self._progress.reset()
+            self._aliprinter._printTime = 0
+            self._aliprinter.printLeftTime = 0
+            self._aliprinter.printJobTime = 0
+
         elif event == Events.PRINT_PAUSED:
             self._aliprinter.pause = 1
 
@@ -319,7 +367,8 @@ class CrealityCloud(object):
             self._aliprinter._upload_data({"curPosition": self._aliprinter._position})
 
     def on_progress(self, fileid, progress):
-        self._aliprinter.printProgress = progress
+        if progress is not None:
+            self._aliprinter.printProgress = progress
 
 
     def start_p2p_service(self):
