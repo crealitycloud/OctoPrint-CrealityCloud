@@ -336,7 +336,10 @@ class CrealityCloud(object):
 
             #remove gcode in temp folder
             if os.path.exists(self._aliprinter.gcode_file):
-                os.remove(self._aliprinter.gcode_file)
+                try:
+                    os.remove(self._aliprinter.gcode_file)
+                except Exception as e:
+                    self._logger.error("remove temp file fail! ERROR:" + e)
 
         elif event == Events.PRINT_PAUSED:
             self._aliprinter.pause = 1

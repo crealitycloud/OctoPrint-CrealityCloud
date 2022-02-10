@@ -556,7 +556,7 @@ class CrealityPrinter(object):
         # Likely means everything went OK
         return True
 
-    def download(self, url, file_path):  # bug
+    def download(self, url, file_path):
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
         }
