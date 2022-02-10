@@ -334,6 +334,10 @@ class CrealityCloud(object):
             self._aliprinter.printLeftTime = 0
             self._aliprinter.printJobTime = 0
 
+            #remove gcode in temp folder
+            if os.path.exists(self._aliprinter.gcode_file):
+                os.remove(self._aliprinter.gcode_file)
+
         elif event == Events.PRINT_PAUSED:
             self._aliprinter.pause = 1
 
