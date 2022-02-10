@@ -78,6 +78,7 @@ class CrealityPrinter(object):
         self._printLeftTime = 0
         self._printStartTime = 0
         self._printTime = 0
+        self.gcode_file = None
         self._logger.info("creality crealityprinter init!")
 
     def __setitem__(self, k, v):
@@ -459,20 +460,29 @@ class CrealityPrinter(object):
             temp_dir, "crealitycloud-file-upload-{}".format(new_filename)
         )
 
-        gcode_file = os.path.join(temp_dir, os.path.splitext(new_filename)[0])
+        self.download_filename = os.path.splitext(new_filename)[0]
+        self.gcode_file = os.path.join(temp_dir, self.download_filename)
 
-        if os.path.exists(gcode_file) == False:
-            self.download(download_url, temp_path)
-            gfile = gzip.GzipFile(temp_path)
-            open(gcode_file, "wb+").write(gfile.read())
-            gfile.close()
-            os.remove(temp_path)
-        self._logger.info("Copying file to filemanager:" + gcode_file)
-        upload = DiskFileWrapper(os.path.splitext(new_filename)[0], gcode_file)
+        filenameToSelect = self.Filemanager.path_on_disk(FileDestinations.LOCAL, self.download_filename)
+        fileExists = False
+        if os.path.exists(filenameToSelect) == False:
+            if os.path.exists(temp_path) == False:
 
+                self.download(download_url, temp_path)
+                gfile = gzip.GzipFile(temp_path)
+                open(self.gcode_file, "wb+").write(gfile.read())
+                gfile.close()
+                os.remove(temp_path)
+            self._logger.info("Copying file to filemanager:" + self.gcode_file)
+            upload = DiskFileWrapper(self.download_filename, self.gcode_file)
+            self._logger.info(type(upload))
+        else:
+            self.dProgress = 100
+            fileExists = True
+            
         try:
             canon_path, canon_filename = self.plugin._file_manager.canonicalize(
-                FileDestinations.LOCAL, upload.filename
+                FileDestinations.LOCAL, self.download_filename
             )
             future_path = self.plugin._file_manager.sanitize_path(
                 FileDestinations.LOCAL, canon_path
@@ -498,21 +508,21 @@ class CrealityPrinter(object):
         ):  # args: path, is sd?
             self._logger.error("Tried to overwrite file in use")
             return False
-
-        try:
-            added_file = self.plugin._file_manager.add_file(
-                FileDestinations.LOCAL,
-                future_full_path_in_storage,
-                upload,
-                allow_overwrite=True,
-                display=canon_filename,
-            )
-        except octoprint.filemanager.storage.StorageError as e:
-            self._logger.error(
-                "Could not upload the file {}".format(future_full_path_in_storage)
-            )
-            self._logger.exception(e)
-            return False
+        if fileExists is not True:
+            try:
+                added_file = self.plugin._file_manager.add_file(
+                    FileDestinations.LOCAL,
+                    future_full_path_in_storage,
+                    upload,
+                    allow_overwrite=True,
+                    display=canon_filename,
+                )
+            except octoprint.filemanager.storage.StorageError as e:
+                self._logger.error(
+                    "Could not upload the file {}".format(future_full_path_in_storage)
+                )
+                self._logger.exception(e)
+                return False
 
         # Select the file for printing
         self.printer.select_file(
@@ -546,7 +556,7 @@ class CrealityPrinter(object):
         # Likely means everything went OK
         return True
 
-    def download(self, url, file_path):  # bug
+    def download(self, url, file_path):
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"
         }
