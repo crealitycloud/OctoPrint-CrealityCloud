@@ -173,6 +173,8 @@ class CrealitycloudPlugin(
                 
                 if (
                     not self._crealitycloud._aliprinter.printId
+                    and leftnum != 0
+                    and rightnum != 0
                     and ((float(leftnum) / float(rightnum)) * 100) > 99.9
                 ):
                     self._crealitycloud._aliprinter.state = 2

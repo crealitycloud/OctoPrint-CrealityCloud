@@ -478,6 +478,7 @@ class CrealityPrinter(object):
             self._logger.info(type(upload))
         else:
             self.dProgress = 100
+            self.state = 1
             fileExists = True
             
         try:
