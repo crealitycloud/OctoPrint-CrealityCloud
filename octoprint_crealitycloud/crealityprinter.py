@@ -291,6 +291,9 @@ class CrealityPrinter(object):
         if self._stop == 1:
             self.state = 4
             self.printer.cancel_print()
+        if self._stop == 2:
+            self.state = 4
+            self._upload_data({'stop' : 1})
 
     @property
     def nozzleTemp(self):
