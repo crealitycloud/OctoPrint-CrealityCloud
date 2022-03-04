@@ -1,15 +1,12 @@
 import logging
 import os
 import io
-import subprocess
-import threading
-import time
 
 from linkkit import linkkit
 from octoprint.events import Events
 from octoprint.util import RepeatedTimer
 
-from .config import CreailtyConfig
+from .config import CrealityConfig
 from .crealityprinter import CrealityPrinter, ErrorCode
 from octoprint.printer import PrinterCallback
 
@@ -32,7 +29,7 @@ class CrealityCloud(object):
         self._logger = logging.getLogger("octoprint.plugins.crealitycloud")
         self.plugin = plugin
         self._octoprinter = plugin._printer
-        self._config = CreailtyConfig(plugin)
+        self._config = CrealityConfig(plugin)
         self._video_started = False
         self._aliprinter = None
         self._p2p_service_thread = None
@@ -46,9 +43,10 @@ class CrealityCloud(object):
         self.connect_printer = False
         self.model = ''
         self._printer_disconnect = False
+        self._M27_timer_state = False
+
 
         self._upload_timer = RepeatedTimer(2,self._upload_timing,run_first=True)
-        self._upload_ip_timer = RepeatedTimer(30,self._upload_ip_timing,run_first=False)
         self._send_M27_timer = RepeatedTimer(10,self._send_M27_timing,run_first=False)
 
         self.connect_aliyun()
@@ -58,12 +56,13 @@ class CrealityCloud(object):
         return self._iot_connected
 
     def _send_M27_timing(self):
-        self._aliprinter.printer.commands(['M27'])
-        self._aliprinter.printer.commands(['M27C'])
-
-    def _upload_ip_timing(self):
-        self._aliprinter.ipAddress
-        self._upload_ip_timer.cancel()
+        if self.plugin.printing_befor_connect:
+            if self._aliprinter.filename is None:
+                self._aliprinter.printer.commands(['M27C'])
+            self._aliprinter.printer.commands(['M27'])
+        else:
+            self._send_M27_timer.cancel()
+            self._M27_timer_state = False
 
     def _upload_timing(self):
             
@@ -126,7 +125,12 @@ class CrealityCloud(object):
                                         break
                                     else:
                                         if "TIME" in line:
-                                            self._aliprinter._printTime = int(line.replace(";TIME:", ""))
+                                            try:
+                                                self._aliprinter._printTime = int(line.replace(";TIME:", ""))
+                                            except Exception as e:
+                                                self._logger.error(e)
+                                        else:
+                                            self._aliprinter._printTime = 0
                         except:
                             self._aliprinter.printLeftTime = 0
             else:
@@ -151,7 +155,7 @@ class CrealityCloud(object):
                 device_secret=self.config_data["deviceSecret"],
             )
             self._iot_connected = True
-            self.lk.enable_logger(logging.WARNING)
+            self.lk.enable_logger(logging.CRITICAL)
             self.lk.on_device_dynamic_register = self.on_device_dynamic_register
             self.lk.on_connect = self.on_connect
             self.lk.on_disconnect = self.on_disconnect
@@ -171,11 +175,12 @@ class CrealityCloud(object):
             self._progress = ProgressMonitor()
             self._aliprinter.printer.register_callback(self._progress)
 
-            time.sleep(3)
-            self._upload_ip_timer.start()
+            self._aliprinter.ipAddress()
+
             if not self.timer:
                 self._upload_timer.start()
                 self._send_M27_timer.start()
+                self._M27_timer_state = True
                 self.timer = True
 
 
@@ -270,7 +275,6 @@ class CrealityCloud(object):
         if self.lk is not None:
             if os.path.exists("/dev/video0"):
                 self._aliprinter.video = 1
-                # self.video_start()
             else:
                 self._aliprinter.video = 0
         else:
@@ -291,13 +295,19 @@ class CrealityCloud(object):
     def on_event(self, event, payload):
 
         if event == Events.CONNECTED:
+            if self.lk is not None and not self._M27_timer_state:
+                try:
+                    self._send_M27_timer.run()
+                    self._M27_timer_state = True
+                except Exception as e:
+                    self._logger.error(e)
             self.device_start()
 
 
         if not self._iot_connected:
             return
 
-        if event == "Startup":
+        if event == Events.STARTUP:
 
             self._aliprinter.connect = 0
             if os.path.exists("/dev/video0"):
@@ -311,23 +321,34 @@ class CrealityCloud(object):
 
         elif event == "DisplayLayerProgress_layerChanged":
             self._aliprinter.layer = int(payload["currentLayer"])
-        # elif event == "CrealityCloud-Video":
-        #     self.video_start()
+            
         elif event == Events.PRINT_FAILED:
+            if self._aliprinter.is_cloud_print:
+                self._aliprinter.is_cloud_print = False
+
             if self._aliprinter.stop == 0:
                 self._aliprinter.state = 3
                 self._aliprinter.error = ErrorCode.PRINT_DISCONNECT.value
-                self._aliprinter.printId = ""
                 self._aliprinter.printProgress = 0
                 self._logger.info("print failed")
         elif event == Events.DISCONNECTED:
+            if not self._M27_timer_state:
+                try:
+                    self._send_M27_timer.cancel()
+                    self._M27_timer_state = False
+                except Exception as e:
+                    self._logger.error(e)
             self._aliprinter.connect = 0
 
         elif event == Events.PRINT_STARTED:
-            if not self._aliprinter.printId:
-                self._aliprinter.mcu_is_print = 1
-            self._aliprinter.state = 1
 
+            if self._aliprinter.is_cloud_print:
+                self._aliprinter.mcu_is_print = 0
+                self._aliprinter.filename = payload["name"]
+            else:
+                self._aliprinter.mcu_is_print = 1
+
+            self._aliprinter.state = 1
             self.print_path = payload["path"]
             self.print_origin = payload["origin"]
             self._progress.reset()
@@ -349,23 +370,26 @@ class CrealityCloud(object):
             self._aliprinter.pause = 0
 
         elif event == Events.PRINT_CANCELLED:
+            if self._aliprinter.is_cloud_print:
+                self._aliprinter.is_cloud_print = False
+
             self.cancelled = True
             self._aliprinter.error = 1
             self._aliprinter.stop = 2
             self._aliprinter.state = 4
             self._aliprinter.printProgress = 0
-            self._aliprinter.printId = self._aliprinter._printId
             if not self._aliprinter.printId:
                 self._aliprinter.mcu_is_print = 0
-            self._aliprinter.printId = ""
             
 
         elif event == Events.PRINT_DONE:
+            if self._aliprinter.is_cloud_print:
+                self._aliprinter.is_cloud_print = False
+
             self._aliprinter.state = 2
             if not self._aliprinter.printId:
                 self._aliprinter.mcu_is_print = 0
             self._aliprinter.printProgress = 0
-            self._aliprinter.printId = ""
 
         # get M114 payload
         elif event == Events.POSITION_UPDATE:
@@ -382,29 +406,3 @@ class CrealityCloud(object):
     def on_progress(self, fileid, progress):
         if progress is not None:
             self._aliprinter.printProgress = progress
-
-
-    def start_p2p_service(self):
-        if self._p2p_service_thread is not None:
-            self._p2p_service_thread = None
-        p2p_service_path = (
-            os.path.dirname(os.path.abspath(__file__)) + "/bin/p2p_server.sh"
-        )
-        if not os.path.exists(p2p_service_path):
-            return
-        if self._config.p2p_data().get("APILicense") is not None:
-            env = os.environ.copy()
-
-            env["HOME_LOG"] = self.plugin.get_plugin_data_folder()
-            env["APILicense"] = self._config.p2p_data().get("APILicense")
-            env["DIDString"] = self._config.p2p_data().get("DIDString")
-            env["InitString"] = self._config.p2p_data().get("InitString")
-            env["RtspPort"] = "8554"
-            self._p2p_service_thread = threading.Thread(
-                target=self._runcmd, args=(["/bin/bash", p2p_service_path], env)
-            )
-            self._p2p_service_thread.start()
-
-    def _runcmd(self, command, env):
-        popen = subprocess.Popen(command, env=env)
-        return_code = popen.wait()

@@ -1,14 +1,38 @@
+<br>
+<h2>CrealityCloud-Octoprint Plugin</h2>
+<hr>
 <div class="container_fluid" id="bindPage_success" data-bind="text: activedMsg, visible: isAcitived()">
 </div>
 
 <div data-bind="visible: !isAcitived()">
+  <h3>
+  Before you start configuring the Plugin,
+  </h3>
+  You need to read carefully and agree to the following content:
   <br>
-  <div>Please download the Creality Cloud APP to get the Key file.</div>
-  <br>
-  <div><a target="view_window" data-bind="attr:{href:appdownloadUrl}">Download the Creality Cloud app</a></div>
-  <br>
-  <div>Click the button below to upload the Key file.</div>
-  <br>
+  <ul>
+    <li>
+      <p>
+        The Creality Cloud plugin needs to enable cloud services, and your 3D printing data will be uploaded to the cloud server, such as temperature, printing speed, printing status, etc. 
+      More detailed information about the privacy policy can be viewed inside the Creality Cloud App navigating to My Space > About > Privacy Policy
+      </p> 
+    </li>
+    <li>
+      <p>
+        You need a Creality Cloud account to connect octoprint and Creality Cloud App.More detailed information about the privacy policy can be viewed inside the Creality Cloud App navigating to My Space > About > User Agreement
+      </p>
+    </li>
+  </ul>
+  <hr>
+  <h3>
+  Configuring the Plugin
+  </h3>
+  <ul>
+    <li><div>Please download the Creality Cloud App to get the Key file.</div></li>
+    <li><div><a target="view_window" data-bind="attr:{href:appdownloadUrl}">Download the Creality Cloud App</a></div></li>
+    <li><a href="https://github.com/crealitycloud/OctoPrint-CrealityCloud#readme" target="_Blank">How to get the Key file</a></li>
+    <li><div>Click the button below to upload the Key file.</div></li>
+  </ul>
   <span class="btn fileinput-button">
     <span>{{ _('Browse...') }}</span>
     <input id="token_file_input" type="file" class="settings_token_input" accept=".tk">
