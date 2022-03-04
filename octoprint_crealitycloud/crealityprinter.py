@@ -10,6 +10,7 @@ from contextlib import closing
 from enum import Enum
 
 import octoprint
+import octoprint.settings
 import octoprint.filemanager.analysis
 import octoprint.filemanager.storage
 import octoprint.plugin
@@ -22,7 +23,7 @@ from octoprint.filemanager.destinations import FileDestinations
 
 from octoprint_crealitycloud.filecontrol import filecontrol
 
-from .config import CreailtyConfig
+from .config import CrealityConfig
 
 
 class ErrorCode(Enum):
@@ -43,7 +44,7 @@ class CrealityPrinter(object):
     def __init__(self, plugin, lk):
 
         self._logger = logging.getLogger("octoprint.plugins.crealityprinter")
-        self._config = CreailtyConfig(plugin)
+        self._config = CrealityConfig(plugin)
         self._filecontrol = filecontrol(plugin)
         self.__linkkit = lk
         self.settings = plugin._settings
@@ -58,6 +59,7 @@ class CrealityPrinter(object):
         self._printProgress = -1
         self._mcu_is_print = -1
         self._printId = ''
+        self._print = ''
         self._nozzleTemp = -1
         self._nozzleTemp2 = -1
         self._bedTemp = -1
@@ -79,11 +81,8 @@ class CrealityPrinter(object):
         self._printStartTime = 0
         self._printTime = 0
         self.gcode_file = None
+        self.is_cloud_print = False
         self._logger.info("creality crealityprinter init!")
-
-    def __setitem__(self, k, v):
-        self._logger.info("__setitem__:" + k)
-        self.__dict__[k] = v
 
     def _upload_data(self, payload):
         if not payload:
@@ -110,11 +109,14 @@ class CrealityPrinter(object):
     def filename(self,v):
         if 'no file' not in v:
             if v != self._filename:
-                self._filename = v  
-                filename = str(str(v).lstrip("Current file: ")).rsplit("\n")
-                filename = str(filename[0])
-                filename = filename.replace("GCO", "gcode")
-                self._upload_data({"print": str(filename)})
+                self._filename = v
+                try:
+                    filename = str(str(v).lstrip("Current file: ")).rsplit("\n")
+                    filename = str(filename[0])
+                    filename = filename.replace("GCO", "gcode")
+                    self._upload_data({"print": filename})
+                except Exception as e:
+                    self._logger.error(e)
 
     @property
     def print(self):
@@ -122,15 +124,18 @@ class CrealityPrinter(object):
 
     @print.setter
     def print(self, url):
+        self.is_cloud_print = True
         self._print = url
         self.layer = 0
-        printId = str(uuid.uuid1()).replace("-", "")
-        self.state = 0
-        self.dProgress = 0
-        self._download_thread = threading.Thread(
-            target=self._process_file_request, args=(url, printId)
-        )
-        self._download_thread.start()
+        try:
+            printId = str(uuid.uuid1()).replace("-", "")
+            self.dProgress = 0
+            self._download_thread = threading.Thread(
+                target=self._process_file_request, args=(url, printId)
+            )
+            self._download_thread.start()
+        except Exception as e:
+            self._logger.error(e)
 
     @property
     def video(self):
@@ -151,10 +156,8 @@ class CrealityPrinter(object):
         self._ReqPrinterPara = int(v)
         if self._ReqPrinterPara == 0:
             self._upload_data({"curFeedratePct": self._curFeedratePct})
-        # if self._ReqPrinterPara == 1:
             if self.printer.is_operational() and not self.printer.is_printing():
                 self._autohome = 1
-                self.printer.commands(["M114"])
                 self._upload_data({"curPosition": self._position,
                                     "autohome": 1})
             else:
@@ -168,10 +171,13 @@ class CrealityPrinter(object):
     # upload filelist
     @reqGcodeFile.setter
     def reqGcodeFile(self, v):
-        page = int(v) & 0x0000FFFF
-        origin = int(v) >> 16
-        file_list = self._filecontrol.repfile(origin, page)
-        self._upload_data({"retGcodeFileInfo": file_list})
+        try:
+            page = int(v) & 0x0000FFFF
+            origin = int(v) >> 16
+            file_list = self._filecontrol.repfile(origin, page)
+            self._upload_data({"retGcodeFileInfo": file_list})
+        except Exception as e:
+            self._logger.error(e)
 
     # upload curFeedratePct
     @property
@@ -186,16 +192,27 @@ class CrealityPrinter(object):
             self._upload_data({"curFeedratePct": self._curFeedratePct})
 
     # get local ip address show in the CrealityCloud App
-    @property
     def ipAddress(self):
+        interface_address = None
+        Settings = octoprint.settings.Settings()
         try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            ip = s.getsockname()[0]
-        finally:
-            s.close()
-            self._upload_data({"netIP": ip})
-            return ip
+            enabled = Settings.getBoolean(["server", "onlineCheck", "enabled"])
+            if (enabled):
+                if (Settings.get(["server", "onlineCheck", "host"]) is not None):
+                    host = Settings.get(["server", "onlineCheck", "host"])
+                else:
+                    host = '8.8.8.8'
+                if (Settings.get(["server", "onlineCheck", "port"]) is not None):
+                    port = Settings.get(["server", "onlineCheck", "port"])
+                else:
+                    port = 53
+                interface_address = octoprint.util.address_for_client(host = host, port = port)
+            if interface_address is not None:
+                self._upload_data({"netIp": interface_address})
+                return interface_address
+        except Exception as e:
+            self._logger.error(e);
+            return None
 
     # sent gCode
     @property
@@ -462,8 +479,12 @@ class CrealityPrinter(object):
         temp_path = os.path.join(
             temp_dir, "crealitycloud-file-upload-{}".format(new_filename)
         )
-
-        self.download_filename = os.path.splitext(new_filename)[0]
+        self._logger.info("new_filename:" + new_filename)
+        if download_url.find("gcode.gz") >= 0:
+            self.download_filename = os.path.splitext(new_filename)[0]
+        else:
+            self.download_filename = new_filename
+        self._logger.info("download_filename:" + self.download_filename)
         self.gcode_file = os.path.join(temp_dir, self.download_filename)
 
         filenameToSelect = self.Filemanager.path_on_disk(FileDestinations.LOCAL, self.download_filename)
@@ -472,10 +493,14 @@ class CrealityPrinter(object):
             if os.path.exists(temp_path) == False:
 
                 self.download(download_url, temp_path)
-                gfile = gzip.GzipFile(temp_path)
-                open(self.gcode_file, "wb+").write(gfile.read())
-                gfile.close()
-                os.remove(temp_path)
+                if temp_path.find("gcode.gz") >= 0:
+                    gfile = gzip.GzipFile(temp_path)
+                    open(self.gcode_file, "wb+").write(gfile.read())
+                    gfile.close()
+                    os.remove(temp_path)
+                else:
+                    os.rename(temp_path,self.gcode_file)
+
             self._logger.info("Copying file to filemanager:" + self.gcode_file)
             upload = DiskFileWrapper(self.download_filename, self.gcode_file)
             self._logger.info(type(upload))
@@ -483,7 +508,7 @@ class CrealityPrinter(object):
             self.dProgress = 100
             self.state = 1
             fileExists = True
-            
+
         try:
             canon_path, canon_filename = self.plugin._file_manager.canonicalize(
                 FileDestinations.LOCAL, self.download_filename
@@ -512,6 +537,7 @@ class CrealityPrinter(object):
         ):  # args: path, is sd?
             self._logger.error("Tried to overwrite file in use")
             return False
+
         if fileExists is not True:
             try:
                 added_file = self.plugin._file_manager.add_file(
@@ -536,15 +562,16 @@ class CrealityPrinter(object):
         )
 
         # Fire file uploaded event
-        payload = {
-            "name": future_filename,
-            "path": added_file,
-            "target": FileDestinations.LOCAL,
-            "select": True,
-            "print": True,
-            "app": True,
-        }
-        eventManager().fire(Events.UPLOAD, payload)
+        if fileExists is not True:
+            payload = {
+                "name": future_filename,
+                "path": added_file,
+                "target": FileDestinations.LOCAL,
+                "select": True,
+                "print": True,
+                "app": True,
+            }
+            eventManager().fire(Events.UPLOAD, payload)
         self._logger.debug("Finished uploading the file")
 
         # Remove temporary file (we didn't forget about you!)
@@ -559,6 +586,7 @@ class CrealityPrinter(object):
         # We got to the end \o/
         # Likely means everything went OK
         return True
+
 
     def download(self, url, file_path):
         headers = {

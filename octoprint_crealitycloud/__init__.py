@@ -29,6 +29,7 @@ class CrealitycloudPlugin(
         )
         self.short_code = None
         self._addr = None
+        self.printing_befor_connect = True
 
     def initialize(self):
         self._crealitycloud = CrealityCloud(self)
@@ -80,10 +81,10 @@ class CrealitycloudPlugin(
                 # version check: github repository
                 "type": "github_release",
                 "user": "crealitycloud",
-                "repo": "OctoPrint-Crealitycloud",
+                "repo": "OctoPrint-CrealityCloud",
                 "current": self._plugin_version,
                 # update method: pip
-                "pip": "https://github.com/crealitycloud/OctoPrint-Crealitycloud/archive/{target_version}.zip",
+                "pip": "https://github.com/crealitycloud/OctoPrint-CrealityCloud/archive/{target_version}.zip",
             }
         }
 
@@ -92,7 +93,7 @@ class CrealitycloudPlugin(
 
     def get_assets(self):
         return dict(
-            js=["js/crealitycloud.js", "js/qrcode.min.js"], css=["css/crealitycloud.css"]
+            js=["js/crealitycloud.js"]
         )
 
     #get token
@@ -143,47 +144,48 @@ class CrealitycloudPlugin(
             self._crealitycloud._aliprinter._str_curFeedratePct = cmd
 
     def gCodeHandlerreceived(self, comm_instance, line, *args, **kwargs):
-        leftnum = 0
-        rightnum = 0
-        if not self._crealitycloud._iot_connected:
-            return line
-        if "SD printing byte " in line:
-            self._crealitycloud._aliprinter.mcu_is_print = 1
-            self._crealitycloud._aliprinter.state = 1
-            leftnum = ""
-            rightnum = ""
-            percentstr = line.lstrip("SD printing byte ")
-            for i in percentstr:
-                if i == "/":
-                    rightnum = str(percentstr.lstrip(leftnum)).rstrip("\r\n")
-                    rightnum = rightnum.lstrip("/")
-                    break
-                leftnum = leftnum + str(i)
-            self._crealitycloud._aliprinter.printProgress = (float(leftnum) / float(rightnum)) * 100
-            
-            return line
-        elif "Current file: " in line:
-            self._crealitycloud._aliprinter.filename = line
-            return line
-        elif "Not SD printing" in line:
-            if (
-                    self._crealitycloud._aliprinter.mcu_is_print == 1
-                and not self._crealitycloud._aliprinter.printer.is_printing()
-            ):
+        if self.printing_befor_connect:
+            leftnum = 0
+            rightnum = 0
+            if not self._crealitycloud._iot_connected:
+                return line
+            if "SD printing byte " in line:
+                self._crealitycloud._aliprinter.mcu_is_print = 1
+                self._crealitycloud._aliprinter.state = 1
+                leftnum = ""
+                rightnum = ""
+                percentstr = line.lstrip("SD printing byte ")
+                try:
+                    leftnum = str(str(percentstr).split('/', 1)[0])
+                    rightnum = str(str(percentstr).split('/', 1)[1])
+                    self._crealitycloud._aliprinter.printProgress = (float(leftnum) / float(rightnum)) * 100
+                except Exception as e:
+                    self._logger.error(e)
                 
+                return line
+            elif "Current file: " in line:
+                self._crealitycloud._aliprinter.filename = line
+                return line
+            elif "Not SD printing" in line:
                 if (
-                    not self._crealitycloud._aliprinter.printId
-                    and leftnum != 0
-                    and rightnum != 0
-                    and ((float(leftnum) / float(rightnum)) * 100) > 99.9
+                        self._crealitycloud._aliprinter.mcu_is_print == 1
+                    and not self._crealitycloud._aliprinter.printer.is_printing()
                 ):
-                    self._crealitycloud._aliprinter.state = 2
-                    self._crealitycloud._aliprinter.printProgress = 0
-                else:
-                    self._crealitycloud._aliprinter.state = 0
-                    self._crealitycloud._aliprinter.printProgress = 0
-                self._crealitycloud._aliprinter.mcu_is_print == 0
-                
+                    
+                    if (
+                        not self._crealitycloud._aliprinter.printId
+                        and leftnum != 0
+                        and rightnum != 0
+                        and ((float(leftnum) / float(rightnum)) * 100) > 99.9
+                    ):
+                        self._crealitycloud._aliprinter.state = 2
+                        self._crealitycloud._aliprinter.printProgress = 0
+                    else:
+                        self._crealitycloud._aliprinter.state = 0
+                        self._crealitycloud._aliprinter.printProgress = 0
+                    self._crealitycloud._aliprinter.mcu_is_print == 0
+                self.printing_befor_connect = False
+            return line
         return line
 
 

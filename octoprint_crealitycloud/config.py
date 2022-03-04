@@ -3,7 +3,7 @@ import logging
 import os
 
 
-class CreailtyConfig(object):
+class CrealityConfig(object):
     def __init__(self, plugin) -> None:
         self._path = self.path = os.path.join(
             plugin.get_plugin_data_folder(), "config.json"
