@@ -20,14 +20,12 @@ class CrealityConfig(object):
             with open(self._path, "r") as f:
                 try:
                     self._data = json.load(f)
-                    f.close()
                 except:
                     os.remove(self._path)
         if os.path.exists(self._p2p_path):
             with open(self._p2p_path, "r") as f:
                 try:
                     self._p2pdata = json.load(f)
-                    f.close()
                 except:
                     os.remove(self._p2p_path)
 
@@ -43,10 +41,8 @@ class CrealityConfig(object):
         self._data[key] = val
         with open(self._path, "w") as f:
             json.dump(self._data, f)
-            f.close()
 
     def save_p2p_config(self, key, val):
         self._p2pdata[key] = val
         with open(self._p2p_path, "w") as f:
             json.dump(self._p2pdata, f)
-            f.close()

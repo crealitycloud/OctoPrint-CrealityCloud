@@ -6,7 +6,8 @@ Creality Cloud plugin needs to be installed in the OctoPrint interface so that y
 
 ## **Before you start configuring the Plugin:**
 The Creality Cloud plugin needs to enable cloud services, and your 3D printing data will be uploaded to the 
-cloud server, such as temperature, printing speed, printing status, etc. More detailed information about the privacy policy can be viewed inside the Creality Cloud App navigating to My Space > About > Privacy Policy
+cloud server, such as temperature, printing speed, printing status, etc. More detailed information about the privacy policy can be viewed:
+- [https://www.crealitycloud.com/policy?type=policy](https://www.crealitycloud.com/policy?type=policy)
 
 You need a Creality Cloud account to connect octoprint and Creality Cloud App.More detailed information about the privacy policy can be viewed inside the Creality Cloud App navigating to My Space > About > User Agreement
 

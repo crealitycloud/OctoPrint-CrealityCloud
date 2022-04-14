@@ -42,17 +42,6 @@ class CrealitycloudPlugin(
             # put your plugin's default settings here
         }
 
-    ##~~ AssetPlugin mixin
-
-    def get_assets(self):
-        # Define your plugin's asset files to automatically include in the
-        # core UI here.
-        return {
-            "js": ["js/crealitycloud.js"],
-            "css": ["css/crealitycloud.css"],
-            "less": ["less/crealitycloud.less"],
-        }
-
     ##~~ def on_after_startup(self):
     def on_after_startup(self):
         self._logger.info("creality cloud stared!")

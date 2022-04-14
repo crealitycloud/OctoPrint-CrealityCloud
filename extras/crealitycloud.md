@@ -5,15 +5,15 @@ id: crealitycloud
 title: OctoPrint-Crealitycloud
 description: TODO
 authors:
-- hemiao
+- crealitycloud
 license: AGPLv3
 
 # TODO
-date: today's date in format YYYY-MM-DD, e.g. 2015-04-21
+date: 2022-04-14
 
-homepage: https://github.com/hemiao218/OctoPrint-Crealitycloud
-source: https://github.com/hemiao218/OctoPrint-Crealitycloud
-archive: https://github.com/hemiao218/OctoPrint-Crealitycloud/archive/master.zip
+homepage: https://github.com/crealitycloud/OctoPrint-Crealitycloud
+source: https://github.com/crealitycloud/OctoPrint-Crealitycloud
+archive: https://github.com/crealitycloud/OctoPrint-Crealitycloud/archive/master.zip
 
 # TODO
 # Set this to true if your plugin uses the dependency_links setup parameter to include
@@ -27,6 +27,9 @@ tags:
 - that apply
 - to your plugin
 - (take a look at the existing plugins for what makes sense here)
+
+# TODO
+privacy policy: https://www.crealitycloud.com/policy?type=policy
 
 # TODO
 screenshots:
