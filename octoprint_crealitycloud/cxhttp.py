@@ -24,24 +24,24 @@ class CrealityAPI(object):
         r = random.random() % (99999 - 10000) + 10000
         return "Raspberry" + str(time.tm_sec) + str(10) + str(r)  # time.tvm_usec
 
-    def getconfig(slef,token):
-        home_url = "https://model-admin.crealitygroup.com/api/cxy/v2/device/user/importDevice"
-        oversea_url = "https://model-admin2.creality.com/api/cxy/v2/device/user/importDevice"
+    def getconfig(self, token):
+        home_url = self.__homeurl + "/api/cxy/v2/device/user/importDevice"
+        oversea_url = self.__overseaurl + "/api/cxy/v2/device/user/importDevice"
         headers = {
             "Content-Type": "application/json",
             "__CXY_JWTOKEN_": token
         }
         mac=uuid.UUID(int = uuid.getnode()).hex[-12:].upper()
-        data = '{"mac": "' + str(mac) + '"}'
-        response = requests.post(home_url, data=data, headers=headers, timeout=2).text
+        data = '{"mac": "' + str(mac) + '" , "iotType": 2}'
+        response = requests.post(home_url, data=data, headers=headers, timeout=5).text
         if "result" not in response:
-            response = requests.post(oversea_url, data=data, headers=headers, timeout=2).text
+             response = requests.post(oversea_url, data=data, headers=headers, timeout=5).text
         res = json.loads(response)
         return res
 
     def getAddrress1(self):
         url = self.__homeurl + "/api/cxy/v2/common/getAddrress"
-        response = requests.post(url, data="{}", headers=self.__headers, timeout=2).text
+        response = requests.post(url, data="{}", headers=self.__headers, timeout=5).text
         res = json.loads(response)
         if res["code"] == 0:
             if res["result"]["apiUrl"] != None:
@@ -50,9 +50,24 @@ class CrealityAPI(object):
 
     def getAddrress2(self):
         url = self.__overseaurl + "/api/cxy/v2/common/getAddrress"
-        response = requests.post(url, data="{}", headers=self.__headers, timeout=2).text
+        response = requests.post(url, data="{}", headers=self.__headers, timeout=5).text
         res = json.loads(response)
         if res["code"] == 0:
             if res["result"]["apiUrl"] != None:
                 return (res["result"]["apiUrl"], res["result"]["country"])
         return ("", "US")
+
+    def exchangeTb(self, deviceName, productKey, deviceSecret, region):
+        homeurl = self.__homeurl + "/api/cxy/v2/device/user/exchangeTb"
+        overseaurl = self.__overseaurl + "/api/cxy/v2/device/user/exchangeTb"
+        data = '{"deviceName": "' + str(deviceName) + '" , "productKey": "' + str(productKey) + '" , "deviceSecret": "' + str(deviceSecret) + '"}'
+        headers = {
+            "Content-Type": "application/json",
+        }
+        if region == 0:
+            url = homeurl
+        else :
+            url = overseaurl
+        response = requests.post(url, data=data, headers=headers, timeout=5).text
+        res = json.loads(response)
+        return res

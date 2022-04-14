@@ -30,18 +30,12 @@ class CrealitycloudPlugin(
         )
         self.short_code = None
         self._addr = None
+        self._regionId = None
         self.printing_befor_connect = True
 
     def initialize(self):
         self._crealitycloud = CrealityCloud(self)
         self._cxapi = CrealityAPI()
-        try:
-            self._addr = self._cxapi.getAddrress1()
-        except:
-            try:
-                self._addr = self._cxapi.getAddrress2()
-            except:
-                self._addr = ("", "US")
 
     def get_settings_defaults(self):
         return {
@@ -103,13 +97,13 @@ class CrealitycloudPlugin(
     def get_token(self):
         try:
             self._res = self._cxapi.getconfig(request.json["token"])["result"]
-            region = self._res["regionId"]
-            self._config = {
+            self._config = {               
                 "deviceName": self._res["deviceName"],
-                "deviceSecret": self._res["deviceSecret"],
-                "productKey": self._res["productKey"],
-                "region": region
+                "deviceSecret": self._res["tbToken"],
+                "iotType": self._res["iotType"],
+				"region": self._res["regionId"]
                 }
+            self._regionId = self._res["regionId"]
             with io.open(
                 self.get_plugin_data_folder()+'/config.json', "w", encoding="utf-8"
             ) as config_file:
@@ -123,16 +117,15 @@ class CrealitycloudPlugin(
     @octoprint.plugin.BlueprintPlugin.route("/status", methods=["GET"])
     @admin_permission.require(403)
     def get_status(self):
-        country = self._addr[1]
         if os.path.exists(self.get_plugin_data_folder() + "/config.json"):
+            if self._crealitycloud.get_server_region(self._regionId) is not None:
+                country = self._crealitycloud.get_server_region(self._regionId)
             if not self._crealitycloud.iot_connected:
                 self._logger.info("start iot server")
                 self._crealitycloud.device_start()
-                if self._crealitycloud.get_server_region() is not None:
-                    country = self._crealitycloud.get_server_region()
             return {
                 "actived": 1,
-                "iot": self._crealitycloud.iot_connected,
+                "iot": True,
                 "printer": self._printer.is_operational(),
                 "country": country,
             }

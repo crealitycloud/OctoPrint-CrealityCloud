@@ -1,7 +1,14 @@
 # OctoPrint-Crealitycloud
 ![main.png](https://cdn.nlark.com/yuque/0/2022/png/22795356/1642471464755-f2818b50-20a2-4b88-8dcd-ac3a56c80654.png#clientId=u473873a0-7629-4&crop=0&crop=0&crop=1&crop=1&from=drop&id=ub6c0b987&margin=%5Bobject%20Object%5D&name=main.png&originHeight=631&originWidth=700&originalType=binary&ratio=1&rotation=0&showTitle=false&size=443430&status=done&style=none&taskId=u403a724d-b949-42c7-90ae-1a1b334eeb7&title=)
+
 Creality Cloud plugin needs to be installed in the OctoPrint interface so that you can connect the Creality Cloud APP to the Raspberry Pi device and print or control directly through the APP by operating OctoPrint.
 
+
+## **Before you start configuring the Plugin:**
+The Creality Cloud plugin needs to enable cloud services, and your 3D printing data will be uploaded to the 
+cloud server, such as temperature, printing speed, printing status, etc. More detailed information about the privacy policy can be viewed inside the Creality Cloud App navigating to My Space > About > Privacy Policy
+
+You need a Creality Cloud account to connect octoprint and Creality Cloud App.More detailed information about the privacy policy can be viewed inside the Creality Cloud App navigating to My Space > About > User Agreement
 
 ## **Setup Creality Cloud Plugin on OctoPrint:**
 
@@ -46,6 +53,7 @@ Plugins that the Creality Cloud Plugin relies on:
 
 
 Back to the OctoPrint interface on your desktop, click on the OctoPrint setting button > find the "Crealitycloud Plugin" on the left column list > click "Browse" to select and upload the Key file that you transmitted from Creality Cloud APP.
+
 ![uploadKey.png](https://cdn.nlark.com/yuque/0/2022/png/22795356/1642471605360-840b996d-5166-4a7d-9212-1ed8f4c08424.png#clientId=u473873a0-7629-4&crop=0&crop=0&crop=1&crop=1&from=drop&id=u60f3a00f&margin=%5Bobject%20Object%5D&name=uploadKey.png&originHeight=813&originWidth=930&originalType=binary&ratio=1&rotation=0&showTitle=false&size=92449&status=done&style=none&taskId=uf1d96ac0-95df-4b59-adb1-726693a1829&title=)
 ## **Slice & Print:**
 
@@ -58,6 +66,7 @@ Before you start...
 
 ![slice&print2-1.png](https://cdn.nlark.com/yuque/0/2022/png/22795356/1642471622208-5bfa5c1f-7008-4ca3-bf1c-31851449a1ec.png#clientId=u473873a0-7629-4&crop=0&crop=0&crop=1&crop=1&from=drop&id=u3e7e3392&margin=%5Bobject%20Object%5D&name=slice%26print2-1.png&originHeight=476&originWidth=683&originalType=binary&ratio=1&rotation=0&showTitle=false&size=573994&status=done&style=none&taskId=u58084822-ecbf-437a-a1fd-ab23a70088e&title=)
 ![slice&print2-2.png](https://cdn.nlark.com/yuque/0/2022/png/22795356/1642471630607-fdc26a21-671d-4508-9bf2-0d93548ddef3.png#clientId=u473873a0-7629-4&crop=0&crop=0&crop=1&crop=1&from=drop&id=u9f653d31&margin=%5Bobject%20Object%5D&name=slice%26print2-2.png&originHeight=328&originWidth=700&originalType=binary&ratio=1&rotation=0&showTitle=false&size=110665&status=done&style=none&taskId=uce6dae09-43c5-498d-b467-56da3632f61&title=)
+
 Start slicing and printing...
 
 
@@ -68,6 +77,7 @@ Start slicing and printing...
 2. Choose a model file to slice and start printing.
 
 ![slicing&printing2.png](https://cdn.nlark.com/yuque/0/2022/png/22795356/1642471649704-68e7cb4a-f39a-4090-a4f8-44c801f4c8d1.png#clientId=u473873a0-7629-4&crop=0&crop=0&crop=1&crop=1&from=drop&id=ude3ac464&margin=%5Bobject%20Object%5D&name=slicing%26printing2.png&originHeight=790&originWidth=766&originalType=binary&ratio=1&rotation=0&showTitle=false&size=296681&status=done&style=none&taskId=u2181775c-22dd-41d4-bacc-6144cf8d1cf&title=)
+
 Hope this Creality Cloud plugin on OctoPrint will give you a different experience on your 3D printing. Thank you for supporting and happy printing!
 
 
