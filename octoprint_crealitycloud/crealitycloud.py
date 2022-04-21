@@ -2,7 +2,6 @@ import logging
 import os
 import io
 
-from linkkit import linkkit
 from octoprint.events import Events
 from octoprint.util import RepeatedTimer
 from octoprint.printer import PrinterCallback
