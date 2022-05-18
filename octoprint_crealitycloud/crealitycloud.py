@@ -1,6 +1,8 @@
 import logging
 import os
 import io
+import calendar;
+import time;
 
 from octoprint.events import Events
 from octoprint.util import RepeatedTimer
@@ -390,6 +392,8 @@ class CrealityCloud(object):
                 self._aliprinter.mcu_is_print = 0
                 self._aliprinter.filename = payload["name"]
             else:
+                ts = calendar.timegm(time.gmtime())
+                self._aliprinter.printId = "local_" + str(ts)
                 self._aliprinter.mcu_is_print = 1
 
             self._aliprinter.state = 1
@@ -442,8 +446,9 @@ class CrealityCloud(object):
             self._aliprinter.stop = 2
             self._aliprinter.state = 4
             self._aliprinter.printProgress = 0
-            if not self._aliprinter.printId:
+            if self._aliprinter.printId.find("local_") >= 0:
                 self._aliprinter.mcu_is_print = 0
+                self._aliprinter.printId = ""
             
 
         elif event == Events.PRINT_DONE:
@@ -451,8 +456,9 @@ class CrealityCloud(object):
                 self._aliprinter.is_cloud_print = False
 
             self._aliprinter.state = 2
-            if not self._aliprinter.printId:
+            if self._aliprinter.printId.find("local_") >= 0:
                 self._aliprinter.mcu_is_print = 0
+                self._aliprinter.printId = ""
             self._aliprinter.printProgress = 0
 
         # get M114 payload
