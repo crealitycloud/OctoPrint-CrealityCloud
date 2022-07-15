@@ -460,6 +460,8 @@ class CrealityCloud(object):
                 self._aliprinter.mcu_is_print = 0
                 self._aliprinter.printId = ""
             self._aliprinter.printProgress = 0
+            self._aliprinter.printLeftTime = 0
+            self._aliprinter.printJobTime = 0
 
         # get M114 payload
         elif event == Events.POSITION_UPDATE:
