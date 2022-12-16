@@ -20,7 +20,7 @@ class ThingsBoard(object):
         self.attributes = {"printStartTime": " ","layer": 0,"printedTimes": 0,"timesLeftToPrint": 0 
                         ,"err": 0,"curPosition":" ","printId":" ","filename":" ","video": 0,"netIP":" ","state": 0,"tfCard": 0,"model":" "
                         ,"mcu_is_print": 0,"boxVersion":" ","InitString":" ","APILicense":" ","DIDString":" ","retGcodeFileInfo":" ","autohome": 0
-                        ,"fan": 0,"stop": 0,"print":" ","nozzleTemp2": 0,"bedTemp2": 0,"pause": 0,"opGcodeFile":" ","gcodeCmd":" ","setPosition":" ","tag":"1.0.6"}
+                        ,"fan": 0,"stop": 0,"print":" ","nozzleTemp2": 0,"bedTemp2": 0,"pause": 0,"opGcodeFile":" ","gcodeCmd":" ","setPosition":" ","tag":"1.0.7"}
         self.__on_server_side_rpc_request = None
 
     def client_initialization(self, region):
@@ -56,7 +56,7 @@ class ThingsBoard(object):
 
     def __client_connect(self):
         try:
-            self.client.connect(timeout=120, keepalive=120)
+            self.client.connect(timeout=90, keepalive=30)
         except Exception as e:
             self._logger.error(str(e))
         

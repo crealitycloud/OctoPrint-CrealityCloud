@@ -484,3 +484,12 @@ class CrealityCloud(object):
     def on_progress(self, fileid, progress):
         if progress is not None:
             self._aliprinter.printProgress = progress
+            
+    def tb_reply_rpc(self, client, request_id, payload):
+        if not payload:
+            return
+        try:
+            self._logger.info('tb_reply_rpc:' + str(payload))
+            self.thingsboard.reply_rpc(client, request_id, payload)
+        except Exception as e:
+            self._logger.error(str(e))
