@@ -86,6 +86,8 @@ class CrealityPrinter(object):
         self.thingsboard = thingsboard
         self._rpc_requestid = None
         self._rpc_client = None
+        self._telemetry_msg = {}
+        self._attributes_msg = {}
 
     def _tb_send_telemetry(self, payload):
         if not payload:
@@ -111,7 +113,7 @@ class CrealityPrinter(object):
     @printId.setter
     def printId(self, v):
         self._printId = v
-        self._tb_send_attributes({"printId": self._printId})
+        self._attributes_msg["printId"] = self._printId
 
     @property
     def filename(self):
@@ -126,7 +128,7 @@ class CrealityPrinter(object):
                     filename = str(str(v).lstrip("Current file: ")).rsplit("\n")
                     filename = str(filename[0])
                     filename = filename.replace("GCO", "gcode")
-                    self._tb_send_attributes({"print": filename})
+                    self._attributes_msg["print"] = filename
                 except Exception as e:
                     self._logger.error(e)
 
@@ -146,7 +148,7 @@ class CrealityPrinter(object):
                 target=self._process_file_request, args=(url, printId)
             )
             self._download_thread.start()
-            self._tb_send_attributes({"print": self._print})
+            self._attributes_msg["print"] = self._print
         except Exception as e:
             self._logger.error(e)
 
@@ -157,7 +159,7 @@ class CrealityPrinter(object):
     @video.setter
     def video(self, v):
         self._video = v
-        self._tb_send_attributes({"video": v})
+        self._attributes_msg["video"] = self._video
 
     @property
     def ReqPrinterPara(self):
@@ -208,7 +210,7 @@ class CrealityPrinter(object):
         if self._curFeedratePct != v:
             self._curFeedratePct = int(v)
             self.printer.feed_rate(self._curFeedratePct)
-            self._tb_send_telemetry({"curFeedratePct": self._curFeedratePct})
+            self._telemetry_msg["curFeedratePct"] = self._curFeedratePct
 
     # get local ip address show in the CrealityCloud App
     def ipAddress(self):
@@ -227,12 +229,20 @@ class CrealityPrinter(object):
                     port = 53
                 interface_address = octoprint.util.address_for_client(host = host, port = port)
             if interface_address is not None:
-                self._tb_send_attributes({"netIP": interface_address})
+                self._attributes_msg["netIP"] = interface_address
                 return interface_address
         except Exception as e:
-            self._logger.error(e);
+            self._logger.error(e)
             return None
 
+    def sendAttributesAndTelemetry(self):
+        if(self._telemetry_msg) :
+            self._tb_send_telemetry(self._telemetry_msg)
+            self._telemetry_msg.clear()
+        if(self._attributes_msg) :
+            self._tb_send_attributes(self._attributes_msg)
+            self._attributes_msg.clear()
+        
     # sent gCode
     @property
     def gcodeCmd(self):
@@ -243,14 +253,14 @@ class CrealityPrinter(object):
         self._gcodeCmd = v
         if v is not None:
             self.printer.commands([v])
-        self._tb_send_attributes({"gcodeCmd": self._gcodeCmd})
+        self._attributes_msg["gcodeCmd"] = self._gcodeCmd
         if self._gcodeCmd.find('G0') >= 0:
             position = self._gcodeCmd.find('G0') + 2
-            self._tb_send_attributes({"setPosition": self._gcodeCmd[position:]})
+            self._attributes_msg["setPosition"] = self._gcodeCmd[position:]
         elif self._gcodeCmd.find("G28 X Y") >= 0:
-            self._tb_send_attributes({"setPosition": "X0 Y0"})
+            self._attributes_msg["setPosition"] = "X0 Y0"
         elif self._gcodeCmd.find("G28 Z") >= 0:
-            self._tb_send_attributes({"setPosition": "Z0"})
+            self._attributes_msg["setPosition"] = "Z0"
 
     @property
     def state(self):
@@ -260,7 +270,7 @@ class CrealityPrinter(object):
     def state(self, v):
         if int(v) != int(self._state):
             self._state = v
-            self._tb_send_attributes({"state": self._state})
+            self._attributes_msg["state"] = self._state
 
     @property
     def dProgress(self):
@@ -269,7 +279,7 @@ class CrealityPrinter(object):
     @dProgress.setter
     def dProgress(self, v):
         self._dProgress = v
-        self._tb_send_telemetry({"dProgress": self._dProgress})
+        self._telemetry_msg["dProgress"] = self._dProgress
 
     @property
     def connect(self):
@@ -283,12 +293,12 @@ class CrealityPrinter(object):
     def error(self, v):
         self._error = v
         self._logger.info("post error:" + str(self._error))
-        self._tb_send_attributes({"err": self._error})
+        self._attributes_msg["err"] = self._error
 
     @connect.setter
     def connect(self, v):
         self._connected = v
-        self._tb_send_attributes({"connect": self._connected})
+        self._attributes_msg["connect"] = self._connected
 
     @property
     def pause(self):
@@ -305,7 +315,7 @@ class CrealityPrinter(object):
             if not self.printer.is_paused():
                 self.printer.pause_print()
                 self.state = 5
-        self._tb_send_attributes({"pause": self._pause})
+        self._attributes_msg["pause"] = self._pause
 
     @property
     def tfCard(self):
@@ -314,7 +324,7 @@ class CrealityPrinter(object):
     @tfCard.setter
     def tfCard(self, v):
         self._tfCard = v
-        self._tb_send_attributes({"tfCard": self._tfCard})
+        self._attributes_msg["tfCard"] = self._tfCard
 
     @property
     def model(self):
@@ -323,7 +333,7 @@ class CrealityPrinter(object):
     @model.setter
     def model(self, v):
         self._model = v
-        self._tb_send_attributes({"model": self._model})
+        self._attributes_msg["model"] = self._model
 
     @property
     def stop(self):
@@ -337,7 +347,7 @@ class CrealityPrinter(object):
             self.printer.cancel_print()
         if self._stop == 2:
             self.state = 4
-        self._tb_send_attributes({'stop' : 1})
+        self._attributes_msg["stop"] = 1
 
     @property
     def nozzleTemp(self):
@@ -347,7 +357,7 @@ class CrealityPrinter(object):
     def nozzleTemp(self, v):
         if int(v) != int(self.nozzleTemp):
             self._nozzleTemp = int(v)
-            self._tb_send_telemetry({"nozzleTemp": int(self._nozzleTemp)})
+            self._telemetry_msg["nozzleTemp"] = int(self._nozzleTemp)
 
     @property
     def nozzleTemp2(self):
@@ -358,7 +368,7 @@ class CrealityPrinter(object):
         if int(v) != int(self._nozzleTemp2):
             self._nozzleTemp2 = int(v)
             self.printer.set_temperature("tool0", int(v))
-            self._tb_send_attributes({"nozzleTemp2": int(self._nozzleTemp2)})
+            self._attributes_msg["nozzleTemp2"] = int(self._nozzleTemp2)
 
     @property
     def bedTemp(self):
@@ -368,7 +378,7 @@ class CrealityPrinter(object):
     def bedTemp(self, v):
         if int(v) != int(self._bedTemp):
             self._bedTemp = int(v)
-            self._tb_send_telemetry({"bedTemp": int(self._bedTemp)})
+            self._telemetry_msg["bedTemp"] = int(self._bedTemp)
 
     @property
     def bedTemp2(self):
@@ -379,7 +389,7 @@ class CrealityPrinter(object):
         if int(v) != int(self._bedTemp2):
             self._bedTemp2 = int(v)
             self.printer.set_temperature("bed", int(v))
-            self._tb_send_attributes({"bedTemp2": self._bedTemp2})
+            self._attributes_msg["bedTemp2"] = int(self._bedTemp2)
 
     @property
     def mcu_is_print(self):
@@ -389,7 +399,7 @@ class CrealityPrinter(object):
     def mcu_is_print(self, v):
         if int(v) != self._mcu_is_print:
             self._mcu_is_print = int(v)
-            self._tb_send_attributes({"mcu_is_print": self._mcu_is_print})
+            self._attributes_msg["mcu_is_print"] = self._mcu_is_print
 
     @property
     def boxVersion(self):
@@ -397,7 +407,7 @@ class CrealityPrinter(object):
 
     @boxVersion.setter
     def boxVersion(self, v):
-        self._tb_send_attributes({"boxVersion": self._boxVersion})
+        self._attributes_msg["boxVersion"] = self._boxVersion
 
     @property
     def printProgress(self):
@@ -407,7 +417,7 @@ class CrealityPrinter(object):
     def printProgress(self, v):
         if v != self._printProgress:
             self._printProgress = v
-            self._tb_send_telemetry({"printProgress": int(self._printProgress)})
+            self._telemetry_msg["printProgress"] = int(self._printProgress)
 
     @property
     def layer(self):
@@ -416,7 +426,7 @@ class CrealityPrinter(object):
     @layer.setter
     def layer(self, v):
         self._layer = v
-        self._tb_send_attributes({"layer": self._layer})
+        self._attributes_msg["layer"] = self._layer
 
     @property
     def InitString(self):
@@ -426,7 +436,7 @@ class CrealityPrinter(object):
     def InitString(self, v):
         self._initString = v
         self._config.save_p2p_config("InitString", v)
-        self._tb_send_attributes({"InitString": self._initString})
+        self._attributes_msg["InitString"] = self._initString
 
     @property
     def APILicense(self):
@@ -436,7 +446,7 @@ class CrealityPrinter(object):
     def APILicense(self, v):
         self._APILicense = v
         self._config.save_p2p_config("APILicense", v)
-        self._tb_send_attributes({"APILicense": self._APILicense})
+        self._attributes_msg["APILicense"] = self._APILicense
 
     @property
     def DIDString(self):
@@ -446,7 +456,7 @@ class CrealityPrinter(object):
     def DIDString(self, v):
         self._DIDString = v
         self._config.save_p2p_config("DIDString", v)
-        self._tb_send_attributes({"DIDString": self._DIDString})
+        self._attributes_msg["DIDString"] = self._DIDString
         eventManager().fire("CrealityCloud-Video", {})
 
     @property
@@ -460,7 +470,7 @@ class CrealityPrinter(object):
             self.printer.commands(["M106"])
         else:
             self.printer.commands(["M107"])
-        self._tb_send_attributes({"fan": self._fan})
+        self._attributes_msg["fan"] = self._fan
 
     @property
     def autohome(self):
@@ -478,7 +488,7 @@ class CrealityPrinter(object):
             if "z" in self._autohome:
                 axes.append("z")
             self.printer.home(axes)
-        self._tb_send_attributes({"autohome": self._autohome})
+        self._attributes_msg["autohome"] = self._autohome
 
     @property
     def printStartTime(self):
@@ -487,7 +497,7 @@ class CrealityPrinter(object):
     @printStartTime.setter
     def printStartTime(self, v):
         self._printStartTime = v
-        self._tb_send_attributes({"printStartTime": str(self._printStartTime)})
+        self._attributes_msg["printStartTime"] = str(self._printStartTime)
 
     @property
     def rpc_requestid(self):
@@ -674,7 +684,7 @@ class CrealityPrinter(object):
                 )
         else:
             self._filecontrol.controlfiles(v)
-        self._tb_send_attributes({"opGcodeFile": v})
+        self._attributes_msg["opGcodeFile"] = v
 
     @property
     def printJobTime(self):
@@ -686,7 +696,7 @@ class CrealityPrinter(object):
             return
         else:
             self._printJobTime = int(v)
-            self._tb_send_telemetry({"printJobTime": self._printJobTime})
+            self._telemetry_msg["printJobTime"] = self._printJobTime
 
     @property
     def printLeftTime(self):
@@ -698,4 +708,4 @@ class CrealityPrinter(object):
             return
         else:
             self._printLeftTime = int(v)
-            self._tb_send_telemetry({"printLeftTime": self._printLeftTime})
+            self._telemetry_msg["printLeftTime"] = self._printLeftTime

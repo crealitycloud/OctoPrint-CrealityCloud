@@ -1,7 +1,7 @@
 /*
  * View model for OctoPrint-Crealitycloud
  *
- * Author: hemiao
+ * Author: hemiao & xiongrui
  * License: AGPLv3
  */
 $(function () {

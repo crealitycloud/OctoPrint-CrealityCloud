@@ -52,6 +52,7 @@ class CrealityCloud(object):
 
         self._upload_timer = RepeatedTimer(2,self._upload_timing,run_first=True)
         self._send_M27_timer = RepeatedTimer(10,self._send_M27_timing,run_first=False)
+        self._iot_timer = RepeatedTimer(3,self._iot_send_timing,run_first=False)
         self._cxapi = CrealityAPI()
         self.connect_thingsboard()
         
@@ -138,6 +139,9 @@ class CrealityCloud(object):
             else:
                 self._aliprinter.printJobTime = 0
 
+    def _iot_send_timing(self):
+        self._aliprinter.sendAttributesAndTelemetry()
+
     def get_server_region(self, regionId):
         if self.config_data.get("region") is not None:
             if self.config_data["region"] == 0:
@@ -185,6 +189,7 @@ class CrealityCloud(object):
             if not self.timer:
                 self._upload_timer.start()
                 self._send_M27_timer.start()
+                self._iot_timer.start()
                 self._M27_timer_state = True
                 self.timer = True
 
@@ -293,7 +298,7 @@ class CrealityCloud(object):
                     exec("self._aliprinter." + prop_name + "='" + str(prop_value) + "'")
                 except Exception as e:
                     self._logger.error(e)
-                    setReturn = {"code":1}
+                    setReturn = {"code":-1}
             self.tb_reply_rpc(client, request_id, setReturn)
 
         elif method.find('get') >= 0:
@@ -309,7 +314,7 @@ class CrealityCloud(object):
                     exec("getReturn.update(self._aliprinter." + prop_name + ")")
                 except Exception as e:
                     self._logger.error(e)
-                    getReturn = {"code":1}
+                    getReturn = {"code":-1}
             self.tb_reply_rpc(client, request_id, getReturn)
 
     def on_publish_topic(self, mid, userdata):
