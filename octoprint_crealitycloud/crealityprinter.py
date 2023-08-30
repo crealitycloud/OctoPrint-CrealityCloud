@@ -67,6 +67,7 @@ class CrealityPrinter(object):
         self._position = ''
         self._curFeedratePct = 0
         self._dProgress = 0
+        self._led = -1
         self._reqGcodeFile = None
         self._opGcodeFile = None
         self._filename = None
@@ -88,6 +89,7 @@ class CrealityPrinter(object):
         self._rpc_client = None
         self._telemetry_msg = {}
         self._attributes_msg = {}
+        self._model = ''
 
     def _tb_send_telemetry(self, payload):
         if not payload:
@@ -114,6 +116,30 @@ class CrealityPrinter(object):
     def printId(self, v):
         self._printId = v
         self._attributes_msg["printId"] = self._printId
+    
+    @property
+    def led(self):
+        return self._led
+    
+    @led.setter
+    def led(self, v):
+        if int(v) != int(self._led):
+            self._led = int(v)
+            self._logger.info("led=======" + self._model)
+            if self._led == 1:
+                if self._model == "CR-10 Smart Pro" or self._model == "CR-10 Smart":
+                    # M224 
+                    self.printer.commands(["M224"])
+                else:
+                    self.printer.commands(["M936 LEDSET1"])
+            else:
+                if self._model == "CR-10 Smart Pro" or self._model == "CR-10 Smart":
+                    # M224 
+                    self.printer.commands(["M225"])
+                else:
+                    self.printer.commands(["M936 LEDSET0"])
+            self._attributes_msg["led_state"] = self._led
+
 
     @property
     def filename(self):
