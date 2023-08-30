@@ -6,8 +6,8 @@ import requests
 
 class CrealityAPI(object):
     def __init__(self):
-        self.__homeurl = "https://model-admin.crealitygroup.com"
-        self.__overseaurl = "https://model-admin2.creality.com"
+        self.__homeurl = "https://api.crealitycloud.cn"
+        self.__overseaurl = "https://api.crealitycloud.com"
         self.__headers = {
             "__CXY_OS_VER_": "v0.0.1",
             "_CXY_OS_LANG_": "1",
