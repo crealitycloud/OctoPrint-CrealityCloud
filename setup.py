@@ -14,7 +14,7 @@ plugin_package = "octoprint_crealitycloud"
 plugin_name = "OctoPrint-Crealitycloud"
 
 # The plugin's version. Can be overwritten within OctoPrint's internal data via __plugin_version__ in the plugin module
-plugin_version = "1.0.10"
+plugin_version = "1.0.9"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # module
@@ -33,7 +33,7 @@ plugin_url = "https://github.com/crealitycloud/OctoPrint-Crealitycloud"
 plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
-plugin_requires = ["OctoPrint>1.7.0", "paho_mqtt<2", "pyjwt", "tb-mqtt-client==1.2", "aliyun-iot-linkkit", "aiortc"]
+plugin_requires = ["OctoPrint>1.7.0", "paho_mqtt==1.6.1", "pyjwt==2.8.0", "tb-mqtt-client==1.2"]
 
 ### --------------------------------------------------------------------------------------------------------------------
 ### More advanced options that you usually shouldn't have to touch follow after this point
