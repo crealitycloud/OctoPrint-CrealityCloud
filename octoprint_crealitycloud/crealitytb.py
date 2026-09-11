@@ -1,10 +1,9 @@
 import logging
-from tb_device_mqtt import TBDeviceMqttClient, TBPublishInfo
+from tb_device_mqtt import TBDeviceMqttClient
 import time
-import psutil
 import json
 
-class ThingsBoard(object):
+class ThingsBoard:
     def __init__(self, devicename, credentials):
         self._logger = logging.getLogger("octoprint.plugins.crealitycloud")
         self._provision_device_key = "73li9vss6hr3vr8c6fev"
@@ -58,7 +57,7 @@ class ThingsBoard(object):
         try:
             self.client.connect(timeout=90, keepalive=30)
         except Exception as e:
-            self._logger.error(str(e))
+            self._logger.error(e)
         
     def __respond_rpc(self):
         if self.__on_server_side_rpc_request is not None:

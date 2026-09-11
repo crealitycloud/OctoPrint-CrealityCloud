@@ -4,7 +4,7 @@ import os
 from octoprint.filemanager.destinations import FileDestinations
 
 
-class filecontrol(object):
+class filecontrol:
     def __init__(self, plugin):
 
         self._fileinfo = ""
@@ -93,7 +93,7 @@ class filecontrol(object):
                 try:
                     self.Filemanager.remove_file(destination, path)
                 except Exception as e:
-                    self._logger.error(str(e))
+                    self._logger.error(e)
         if "rename" in v:
             if "local" in v:
                 v = str(v).lstrip("renamebox:/local:")

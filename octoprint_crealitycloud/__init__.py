@@ -1,10 +1,6 @@
-# coding=utf-8
-from __future__ import absolute_import
-
 import logging
 import os
 import json
-import io
 
 import octoprint.plugin
 from flask import request
@@ -93,14 +89,14 @@ class CrealitycloudPlugin(
 				"region": self._res["regionId"]
                 }
             self._regionId = self._res["regionId"]
-            with io.open(
+            with open(
                 self.get_plugin_data_folder()+'/config.json', "w", encoding="utf-8"
             ) as config_file:
                 json.dump(self._config,config_file, indent=2, separators=(',',':'))
-                self._logger.info(self._config)
+                self._logger.info("%s", self._config)
             return {"code": 0}
         except Exception as e:
-            self._logger.error(str(e))
+            self._logger.error(e)
             return {"code": -1}
 
     @octoprint.plugin.BlueprintPlugin.route("/status", methods=["GET"])
