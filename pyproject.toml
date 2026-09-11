@@ -1,0 +1,47 @@
+[build-system]
+requires = [
+    "setuptools>=68",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "OctoPrint-Crealitycloud"
+version = "1.0.9"
+description = "A OctoPrint-Plugin that connect the Octoprint to Creality Could"
+authors = [
+    { name = "hemiao & xiongrui", email = "hemiao@creality.com" },
+]
+requires-python = ">=3.7,<4"
+dependencies = [
+    "OctoPrint>1.7.0",
+    "paho_mqtt==1.6.1",
+    "pyjwt==2.8.0",
+    "tb-mqtt-client==1.2",
+]
+dynamic = [
+    "license",
+]
+
+[project.entry-points."octoprint.plugin"]
+crealitycloud = "octoprint_crealitycloud"
+
+[project.urls]
+Homepage = "https://github.com/crealitycloud/OctoPrint-Crealitycloud"
+
+[project.optional-dependencies]
+develop = [
+    "go-task-bin",
+]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = [
+    "octoprint_crealitycloud",
+    "octoprint_crealitycloud.*",
+]
