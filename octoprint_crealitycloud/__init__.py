@@ -5,7 +5,7 @@ import json
 import octoprint.plugin
 from flask import request
 
-from octoprint.server import admin_permission
+from octoprint.access.permissions import Permissions
 from .crealitycloud import CrealityCloud
 from .cxhttp import CrealityAPI
 
@@ -78,7 +78,7 @@ class CrealitycloudPlugin(
 
     #get token
     @octoprint.plugin.BlueprintPlugin.route("/get_token", methods=["POST"])
-    @admin_permission.require(403)
+    @Permissions.SETTINGS.require(403)
     def get_token(self):
         try:
             self._res = self._cxapi.getconfig(request.json["token"])["result"]
@@ -100,7 +100,7 @@ class CrealitycloudPlugin(
             return {"code": -1}
 
     @octoprint.plugin.BlueprintPlugin.route("/status", methods=["GET"])
-    @admin_permission.require(403)
+    @Permissions.SETTINGS.require(403)
     def get_status(self):
         if os.path.exists(self.get_plugin_data_folder() + "/config.json"):
             if self._crealitycloud.get_server_region(self._regionId) is not None:
