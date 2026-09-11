@@ -176,7 +176,7 @@ class CrealitycloudPlugin(
 
 __plugin_name__ = "Crealitycloud Plugin"
 
-__plugin_pythoncompat__ = ">=3,<4"
+__plugin_pythoncompat__ = ">=3.7,<4"
 
 
 def __plugin_load__():
