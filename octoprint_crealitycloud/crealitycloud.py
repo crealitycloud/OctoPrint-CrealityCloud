@@ -39,7 +39,6 @@ class CrealityCloud:
         self._p2p_service_thread = None
         self._video_service_thread = None
         self._active_service_thread = None
-        self._iot_connected = False
         self.lk = None
         self.thingsboard = None
         self.timer = False
@@ -57,7 +56,7 @@ class CrealityCloud:
         
     @property
     def iot_connected(self):
-        return self._iot_connected
+        return self.thingsboard is not None and self.thingsboard.connect_state()
 
     def _send_M27_timing(self):
         if self.plugin.printing_befor_connect:
@@ -176,7 +175,6 @@ class CrealityCloud:
 
             thingsboard_Id = self.config_data["deviceName"]
             self.thingsboard = ThingsBoard(thingsboard_Id,thingsboard_Token)
-            self._iot_connected = self.thingsboard.connect_state
             self.thingsboard.on_server_side_rpc_request = self.on_server_side_rpc_request
             self.thingsboard.client_initialization(region)
             self._aliprinter = CrealityPrinter(self.plugin, self.lk, self.thingsboard)
@@ -278,8 +276,7 @@ class CrealityCloud:
             except Exception as e:
                 self._logger.error(e)
     
-    def on_server_side_rpc_request(self, client, request_id, request_body):
-        # self._aliprinter.rpc_client = client
+    def on_server_side_rpc_request(self, request_id, request_body):
         # self._aliprinter.rpc_requestid = request_id
         if 'method' in request_body.keys():
             method = request_body["method"]
@@ -302,7 +299,7 @@ class CrealityCloud:
                 except Exception as e:
                     self._logger.error(e)
                     setReturn = {"code":-1}
-            self.tb_reply_rpc(client, request_id, setReturn)
+            self.tb_reply_rpc(request_id, setReturn)
 
         elif method.find('get') >= 0:
             getReturn = {"code":0}
@@ -318,7 +315,7 @@ class CrealityCloud:
                 except Exception as e:
                     self._logger.error(e)
                     getReturn = {"code":-1}
-            self.tb_reply_rpc(client, request_id, getReturn)
+            self.tb_reply_rpc(request_id, getReturn)
 
     def on_publish_topic(self, mid, userdata):
         self._logger.info("on_publish_topic mid:%d", mid)
@@ -354,7 +351,7 @@ class CrealityCloud:
             self.device_start()
 
 
-        if not self._iot_connected:
+        if not self.iot_connected:
             return
 
         if event == Events.STARTUP:
@@ -493,11 +490,11 @@ class CrealityCloud:
         if progress is not None:
             self._aliprinter.printProgress = progress
             
-    def tb_reply_rpc(self, client, request_id, payload):
+    def tb_reply_rpc(self, request_id, payload):
         if not payload:
             return
         try:
             self._logger.info('tb_reply_rpc:%s', payload)
-            self.thingsboard.reply_rpc(client, request_id, payload)
+            self.thingsboard.reply_rpc(request_id, payload)
         except Exception as e:
             self._logger.error(e)

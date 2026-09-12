@@ -44,14 +44,14 @@ class ThingsBoard:
     def send_attributes(self, payload):
         self.client.send_attributes(payload)
     
-    def reply_rpc(self, client, request_id, payload):
-        client.send_rpc_reply(request_id, json.dumps(payload))
-    
+    def reply_rpc(self, request_id, payload):
+        self.client.send_rpc_reply(request_id, json.dumps(payload))
+
     def connect_state(self):
-        return self.client.is_connected
+        return self.client is not None and self.client.is_connected()
 
     def __client_create(self):
-        self.client = TBDeviceMqttClient(self._host, self.credentials)
+        self.client = TBDeviceMqttClient(self._host, username=self.credentials)
 
     def __client_connect(self):
         try:

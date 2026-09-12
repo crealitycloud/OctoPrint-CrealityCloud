@@ -14,9 +14,10 @@ authors = [
 requires-python = ">=3.7,<4"
 dependencies = [
     "OctoPrint>1.7.0",
-    "paho_mqtt==1.6.1",
-    "pyjwt==2.8.0",
-    "tb-mqtt-client==1.2",
+    "psutil>=5.6.5",
+    "requests>=2.22.0",
+    "paho-mqtt>=1.6,<3",
+    "tb-mqtt-client==1.4.1",
 ]
 dynamic = [
     "license",

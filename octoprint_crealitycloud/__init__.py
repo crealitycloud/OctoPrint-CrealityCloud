@@ -128,7 +128,7 @@ class CrealitycloudPlugin(
         if self.printing_befor_connect:
             leftnum = 0
             rightnum = 0
-            if not self._crealitycloud._iot_connected:
+            if not self._crealitycloud.iot_connected:
                 return line
             if "SD printing byte " in line:
                 self._crealitycloud._aliprinter.mcu_is_print = 1
