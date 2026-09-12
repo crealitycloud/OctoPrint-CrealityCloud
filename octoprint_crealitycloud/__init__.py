@@ -108,6 +108,7 @@ class CrealitycloudPlugin(
     @octoprint.plugin.BlueprintPlugin.route("/status", methods=["GET"])
     @Permissions.SETTINGS.require(403)
     def get_status(self):
+        country = None
         if os.path.exists(self.get_plugin_data_folder() + "/config.json"):
             if self._crealitycloud.get_server_region(self._regionId) is not None:
                 country = self._crealitycloud.get_server_region(self._regionId)
