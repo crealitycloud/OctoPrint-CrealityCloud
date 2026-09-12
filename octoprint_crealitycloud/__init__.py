@@ -99,7 +99,7 @@ class CrealitycloudPlugin(
                 self.get_plugin_data_folder()+'/config.json', "w", encoding="utf-8"
             ) as config_file:
                 json.dump(self._config,config_file, indent=2, separators=(',',':'))
-                self._logger.info("%s", self._config)
+                self._logger.debug("%s", self._config)
             return {"code": 0}
         except Exception as e:
             self._logger.error(e)
