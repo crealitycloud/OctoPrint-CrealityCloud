@@ -54,6 +54,9 @@ class filecontrol:
                 self._filedict = {}
                 self._fileinfo = ""
                 num_fileinfo = 0
+            date = file["date"]
+            if hasattr(date, "timestamp"):
+                date = int(date.timestamp())
             # 生成文件信息字符串
             self._fileinfo = (
                 str(self._fileinfo)
@@ -62,7 +65,7 @@ class filecontrol:
                 + ":"
                 + str(file["size"])
                 + ":"
-                + str(file["date"])
+                + str(date)
                 + ";"
             )
             num_fileinfo = num_fileinfo + 1
