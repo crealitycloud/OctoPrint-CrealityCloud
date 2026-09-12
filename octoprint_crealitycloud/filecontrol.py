@@ -15,6 +15,15 @@ class filecontrol:
 
         self.Filemanager = plugin._file_manager
 
+    def _flatten(self, entries):
+        files = []
+        for entry in entries.values():
+            if entry.get("type") == "folder":
+                files += self._flatten(entry.get("children") or {})
+            else:
+                files.append(entry)
+        return files
+
     # 获取树莓派TF卡中的文件信息,储存至self._filelist
     def _getTFfileinfo(self):
         origin = FileDestinations.LOCAL
@@ -23,7 +32,7 @@ class filecontrol:
         recursive = True
         level = 0
         allow_from_cache = True
-        self._filelist = list(
+        self._filelist = self._flatten(
             self.Filemanager.list_files(
                 origin,
                 path=path,
@@ -31,7 +40,7 @@ class filecontrol:
                 recursive=recursive,
                 level=level,
                 force_refresh=not allow_from_cache,
-            )[origin].values()
+            )[origin]
         )
         # 按照文件修改时间重新排序
         self._filelist = sorted(self._filelist, key=lambda x: x["date"], reverse=True)
@@ -61,7 +70,7 @@ class filecontrol:
             self._fileinfo = (
                 str(self._fileinfo)
                 + "/local:"
-                + str(file["name"])
+                + str(file["path"])
                 + ":"
                 + str(file["size"])
                 + ":"
