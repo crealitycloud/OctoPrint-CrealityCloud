@@ -71,6 +71,9 @@ class CrealitycloudPlugin(
     def get_template_configs(self):
         return [dict(type="settings", custom_bindings=True)]
 
+    def is_template_autoescaped(self):
+        return True
+
     def get_assets(self):
         return dict(
             js=["js/crealitycloud.js"]
