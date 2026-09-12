@@ -79,6 +79,9 @@ class CrealitycloudPlugin(
             js=["js/crealitycloud.js"]
         )
 
+    def is_blueprint_csrf_protected(self):
+        return True
+
     #get token
     @octoprint.plugin.BlueprintPlugin.route("/get_token", methods=["POST"])
     @Permissions.SETTINGS.require(403)
