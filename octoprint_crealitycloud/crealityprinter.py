@@ -1,7 +1,6 @@
 import gzip
 import logging
 import os
-import socket
 import tempfile
 import threading
 import time
@@ -40,7 +39,7 @@ class ErrorCode(Enum):
     NO_SPLACE = 10
 
 
-class CrealityPrinter(object):
+class CrealityPrinter:
     def __init__(self, plugin, lk, thingsboard):
 
         self._logger = logging.getLogger("octoprint.plugins.crealityprinter")
@@ -97,16 +96,16 @@ class CrealityPrinter(object):
         try:
             self.thingsboard.send_telemetry(payload)
         except Exception as e:
-            self._logger.error(str(e))
+            self._logger.error(e)
 
     def _tb_send_attributes(self, payload):
         if not payload:
             return
         try:
-            self._logger.info('tb_send_attributes:' + str(payload))
+            self._logger.info('tb_send_attributes:%s', payload)
             self.thingsboard.send_attributes(payload)
         except Exception as e:
-            self._logger.error(str(e))
+            self._logger.error(e)
 
     @property
     def printId(self):
@@ -125,7 +124,7 @@ class CrealityPrinter(object):
     def led(self, v):
         if int(v) != int(self._led):
             self._led = int(v)
-            self._logger.info("led=======" + self._model)
+            self._logger.info("led=======%s", self._model)
             if self._led == 1:
                 if self._model == "CR-10 Smart Pro" or self._model == "CR-10 Smart":
                     # M224 
@@ -318,7 +317,7 @@ class CrealityPrinter(object):
     @error.setter
     def error(self, v):
         self._error = v
-        self._logger.info("post error:" + str(self._error))
+        self._logger.info("post error:%s", self._error)
         self._attributes_msg["err"] = self._error
 
     @connect.setter
@@ -552,26 +551,26 @@ class CrealityPrinter(object):
         ).free
 
         self._logger.info(
-            "Downloading new file, name: {}, free space: {}".format(new_filename, free)
+            "Downloading new file, name: %s, free space: %s", new_filename, free
         )
         new_filename = os.path.basename(download_url)
         # response.content currently contains the file's content in memory, now write it to a temporary file
         temp_dir = tempfile.gettempdir()
         temp_path = os.path.join(
-            temp_dir, "crealitycloud-file-upload-{}".format(new_filename)
+            temp_dir, f"crealitycloud-file-upload-{new_filename}"
         )
-        self._logger.info("new_filename:" + new_filename)
+        self._logger.info("new_filename:%s", new_filename)
         if download_url.find("gcode.gz") >= 0:
             self.download_filename = os.path.splitext(new_filename)[0]
         else:
             self.download_filename = new_filename
-        self._logger.info("download_filename:" + self.download_filename)
+        self._logger.info("download_filename:%s", self.download_filename)
         self.gcode_file = os.path.join(temp_dir, self.download_filename)
 
         filenameToSelect = self.Filemanager.path_on_disk(FileDestinations.LOCAL, self.download_filename)
         fileExists = False
-        if os.path.exists(filenameToSelect) == False:
-            if os.path.exists(temp_path) == False:
+        if not os.path.exists(filenameToSelect):
+            if not os.path.exists(temp_path):
 
                 self.download(download_url, temp_path)
                 if temp_path.find("gcode.gz") >= 0:
@@ -582,9 +581,9 @@ class CrealityPrinter(object):
                 else:
                     os.rename(temp_path,self.gcode_file)
 
-            self._logger.info("Copying file to filemanager:" + self.gcode_file)
+            self._logger.info("Copying file to filemanager:%s", self.gcode_file)
             upload = DiskFileWrapper(self.download_filename, self.gcode_file)
-            self._logger.info(type(upload))
+            self._logger.info("%s", type(upload))
         else:
             self.dProgress = 100
             self.state = 1
@@ -630,7 +629,7 @@ class CrealityPrinter(object):
                 )
             except octoprint.filemanager.storage.StorageError as e:
                 self._logger.error(
-                    "Could not upload the file {}".format(future_full_path_in_storage)
+                    "Could not upload the file %s", future_full_path_in_storage
                 )
                 self._logger.exception(e)
                 return False
@@ -661,7 +660,7 @@ class CrealityPrinter(object):
         # except FileNotFoundError:
         #    pass
         except Exception:
-            self._logger.warning("Failed to remove file at {}".format(temp_path))
+            self._logger.warning("Failed to remove file at %s", temp_path)
         self.state = 1
         self.printStartTime = int(time.time())
         # We got to the end \o/

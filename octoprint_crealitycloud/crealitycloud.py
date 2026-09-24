@@ -1,8 +1,7 @@
 import logging
 import os
-import io
-import calendar;
-import time;
+import calendar
+import time
 
 from octoprint.events import Events
 from octoprint.util import RepeatedTimer
@@ -15,7 +14,7 @@ from .cxhttp import CrealityAPI
 
 class ProgressMonitor(PrinterCallback):
     def __init__(self, *args, **kwargs):
-        super(ProgressMonitor, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.reset()
 
     def reset(self):
@@ -26,7 +25,7 @@ class ProgressMonitor(PrinterCallback):
         self.printJobTime = data["progress"]["printTime"]
         self.printLeftTime = data["progress"]["printTimeLeft"]
 
-class CrealityCloud(object):
+class CrealityCloud:
     def __init__(self, plugin):
         # cn-shanghai，us-west-1，ap-southeast-1
         self._logger = logging.getLogger("octoprint.plugins.crealitycloud")
@@ -40,7 +39,6 @@ class CrealityCloud(object):
         self._p2p_service_thread = None
         self._video_service_thread = None
         self._active_service_thread = None
-        self._iot_connected = False
         self.lk = None
         self.thingsboard = None
         self.timer = False
@@ -58,7 +56,7 @@ class CrealityCloud(object):
         
     @property
     def iot_connected(self):
-        return self._iot_connected
+        return self.thingsboard is not None and self.thingsboard.connect_state()
 
     def _send_M27_timing(self):
         if self.plugin.printing_befor_connect:
@@ -79,7 +77,7 @@ class CrealityCloud(object):
 
         self._printer_disconnect = False
         #upload box verson
-        if self._aliprinter.bool_boxVersion != True:
+        if not self._aliprinter.bool_boxVersion:
             self._aliprinter.boxVersion = self._aliprinter._boxVersion
             self._aliprinter.bool_boxVersion = True
 
@@ -122,7 +120,7 @@ class CrealityCloud(object):
                     else:
                         try:
                             path = self._aliprinter.plugin._file_manager.path_on_disk(self.print_origin,self.print_path)
-                            with io.open(path, mode="r", encoding="utf8", errors="replace") as file:
+                            with open(path, encoding="utf8", errors="replace") as file:
                                 for line in file:
                                     if line[0] != ';':
                                         break
@@ -177,7 +175,6 @@ class CrealityCloud(object):
 
             thingsboard_Id = self.config_data["deviceName"]
             self.thingsboard = ThingsBoard(thingsboard_Id,thingsboard_Token)
-            self._iot_connected = self.thingsboard.connect_state
             self.thingsboard.on_server_side_rpc_request = self.on_server_side_rpc_request
             self.thingsboard.client_initialization(region)
             self._aliprinter = CrealityPrinter(self.plugin, self.lk, self.thingsboard)
@@ -206,14 +203,14 @@ class CrealityCloud(object):
         return regions.get(num)
 
     def on_thing_shadow_get(self, payload, userdata):
-        self._logger.info("prop data:%r" % self.rawDataToProtocol(payload))
+        self._logger.info("prop data:%r", self.rawDataToProtocol(payload))
 
     def on_thing_raw_data_arrived(self, payload, userdata):
-        self._logger.info("on_thing_raw_data_arrived:%r" % payload)
-        self._logger.info("prop data:%r" % self.rawDataToProtocol(payload))
+        self._logger.info("on_thing_raw_data_arrived:%r", payload)
+        self._logger.info("prop data:%r", self.rawDataToProtocol(payload))
 
     def on_thing_raw_data_post(self, payload, userdata):
-        self._logger.info("on_thing_raw_data_post: %s" % str(payload))
+        self._logger.info("on_thing_raw_data_post: %s", payload)
 
     def rawDataToProtocol(self, byte_data):
         alink_data = {}
@@ -229,38 +226,42 @@ class CrealityCloud(object):
 
     def on_thing_prop_post(self, request_id, code, data, message, userdata):
         self._logger.info(
-            "on_thing_prop_post request id:%s, code:%d, data:%s message:%s"
-            % (request_id, code, str(data), message)
+            "on_thing_prop_post request id:%s, code:%d, data:%s message:%s",
+            request_id,
+            code,
+            data,
+            message,
         )
 
     def on_device_dynamic_register(self, rc, value, userdata):
         if rc == 0:
-            self._logger.info("dynamic register device success, value:" + value)
+            self._logger.info("dynamic register device success, value:%s", value)
         else:
-            self._logger.info("dynamic register device fail, message:" + value)
+            self._logger.info("dynamic register device fail, message:%s", value)
 
     def on_connect(self, session_flag, rc, userdata):
-        self._logger.info("on_connect:%d,rc:%d" % (session_flag, rc))
+        self._logger.info("on_connect:%d,rc:%d", session_flag, rc)
         pass
 
     def on_disconnect(self, rc, userdata):
-        self._logger.info("on_disconnect:rc:%d,userdata:" % rc)
+        self._logger.info("on_disconnect:rc:%d,userdata:", rc)
 
     def on_topic_message(self, topic, payload, qos, userdata):
         self._logger.info(
-            "on_topic_message:" + topic + " payload:" + str(payload) + " qos:" + str(qos)
+            "on_topic_message:%s payload:%s qos:%s", topic, payload, qos
         )
         pass
 
     def on_subscribe_topic(self, mid, granted_qos, userdata):
         self._logger.info(
-            "on_subscribe_topic mid:%d, granted_qos:%s"
-            % (mid, str(",".join("%s" % it for it in granted_qos)))
+            "on_subscribe_topic mid:%d, granted_qos:%s",
+            mid,
+            ",".join(str(it) for it in granted_qos),
         )
         pass
 
     def on_unsubscribe_topic(self, mid, userdata):
-        self._logger.info("on_unsubscribe_topic mid:%d" % mid)
+        self._logger.info("on_unsubscribe_topic mid:%d", mid)
         pass
 
     def on_thing_prop_changed(self, params, userdata):
@@ -268,15 +269,14 @@ class CrealityCloud(object):
         for prop_name in prop_names:
             prop_value = params.get(prop_name)
             self._logger.info(
-                "on_thing_prop_changed params:" + prop_name + ":" + str(prop_value)
+                "on_thing_prop_changed params:%s:%s", prop_name, prop_value
             )
             try:
                 exec("self._aliprinter." + prop_name + "='" + str(prop_value) + "'")
             except Exception as e:
                 self._logger.error(e)
     
-    def on_server_side_rpc_request(self, client, request_id, request_body):
-        # self._aliprinter.rpc_client = client
+    def on_server_side_rpc_request(self, request_id, request_body):
         # self._aliprinter.rpc_requestid = request_id
         if 'method' in request_body.keys():
             method = request_body["method"]
@@ -292,14 +292,14 @@ class CrealityCloud(object):
             for prop_name in prop_names:
                 prop_value = params.get(prop_name)
                 self._logger.info(
-                    "on_thing_prop_changed params:" + prop_name + ":" + str(prop_value)
+                    "on_thing_prop_changed params:%s:%s", prop_name, prop_value
                 )
                 try:
                     exec("self._aliprinter." + prop_name + "='" + str(prop_value) + "'")
                 except Exception as e:
                     self._logger.error(e)
                     setReturn = {"code":-1}
-            self.tb_reply_rpc(client, request_id, setReturn)
+            self.tb_reply_rpc(request_id, setReturn)
 
         elif method.find('get') >= 0:
             getReturn = {"code":0}
@@ -307,7 +307,7 @@ class CrealityCloud(object):
             for prop_name in prop_names:
                 prop_value = params.get(prop_name)
                 self._logger.info(
-                    "on_thing_prop_changed params:" + prop_name + ":" + str(prop_value)
+                    "on_thing_prop_changed params:%s:%s", prop_name, prop_value
                 )
                 try:
                     exec("self._aliprinter." + prop_name + "='" + str(prop_value) + "'")
@@ -315,10 +315,10 @@ class CrealityCloud(object):
                 except Exception as e:
                     self._logger.error(e)
                     getReturn = {"code":-1}
-            self.tb_reply_rpc(client, request_id, getReturn)
+            self.tb_reply_rpc(request_id, getReturn)
 
     def on_publish_topic(self, mid, userdata):
-        self._logger.info("on_publish_topic mid:%d" % mid)
+        self._logger.info("on_publish_topic mid:%d", mid)
 
     def on_start(self):
         self._logger.info("plugin started")
@@ -351,7 +351,7 @@ class CrealityCloud(object):
             self.device_start()
 
 
-        if not self._iot_connected:
+        if not self.iot_connected:
             return
 
         if event == Events.STARTUP:
@@ -412,7 +412,7 @@ class CrealityCloud(object):
             
             try:
                 path = self._aliprinter.plugin._file_manager.path_on_disk(self.print_origin,self.print_path)
-                with io.open(path, mode="r", encoding="utf8", errors="replace") as file:
+                with open(path, encoding="utf8", errors="replace") as file:
                     for line in file:
                         if ';----------Shell Config----------------' in line:
                             break
@@ -440,7 +440,7 @@ class CrealityCloud(object):
                 try:
                     os.remove(self._aliprinter.gcode_file)
                 except Exception as e:
-                    self._logger.error("remove temp file fail! ERROR:" + e)
+                    self._logger.error("remove temp file fail! ERROR:%s", e)
 
         elif event == Events.PRINT_PAUSED:
             self._aliprinter.pause = 1
@@ -490,11 +490,11 @@ class CrealityCloud(object):
         if progress is not None:
             self._aliprinter.printProgress = progress
             
-    def tb_reply_rpc(self, client, request_id, payload):
+    def tb_reply_rpc(self, request_id, payload):
         if not payload:
             return
         try:
-            self._logger.info('tb_reply_rpc:' + str(payload))
-            self.thingsboard.reply_rpc(client, request_id, payload)
+            self._logger.info('tb_reply_rpc:%s', payload)
+            self.thingsboard.reply_rpc(request_id, payload)
         except Exception as e:
-            self._logger.error(str(e))
+            self._logger.error(e)

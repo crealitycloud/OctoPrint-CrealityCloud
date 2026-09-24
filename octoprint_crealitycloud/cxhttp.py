@@ -4,7 +4,7 @@ import uuid
 import requests
 
 
-class CrealityAPI(object):
+class CrealityAPI:
     def __init__(self):
         self.__homeurl = "https://api.crealitycloud.cn"
         self.__overseaurl = "https://api.crealitycloud.com"
@@ -44,7 +44,7 @@ class CrealityAPI(object):
         response = requests.post(url, data="{}", headers=self.__headers, timeout=5).text
         res = json.loads(response)
         if res["code"] == 0:
-            if res["result"]["apiUrl"] != None:
+            if res["result"]["apiUrl"] is not None:
                 return (res["result"]["apiUrl"], res["result"]["country"])
         return ("", "US")
 
@@ -53,7 +53,7 @@ class CrealityAPI(object):
         response = requests.post(url, data="{}", headers=self.__headers, timeout=5).text
         res = json.loads(response)
         if res["code"] == 0:
-            if res["result"]["apiUrl"] != None:
+            if res["result"]["apiUrl"] is not None:
                 return (res["result"]["apiUrl"], res["result"]["country"])
         return ("", "US")
 

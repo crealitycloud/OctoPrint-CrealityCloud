@@ -1,15 +1,11 @@
-# coding=utf-8
-from __future__ import absolute_import
-
 import logging
 import os
 import json
-import io
 
 import octoprint.plugin
 from flask import request
 
-from octoprint.server import admin_permission
+from octoprint.access.permissions import Permissions
 from .crealitycloud import CrealityCloud
 from .cxhttp import CrealityAPI
 
@@ -75,14 +71,20 @@ class CrealitycloudPlugin(
     def get_template_configs(self):
         return [dict(type="settings", custom_bindings=True)]
 
+    def is_template_autoescaped(self):
+        return True
+
     def get_assets(self):
         return dict(
             js=["js/crealitycloud.js"]
         )
 
+    def is_blueprint_csrf_protected(self):
+        return True
+
     #get token
     @octoprint.plugin.BlueprintPlugin.route("/get_token", methods=["POST"])
-    @admin_permission.require(403)
+    @Permissions.SETTINGS.require(403)
     def get_token(self):
         try:
             self._res = self._cxapi.getconfig(request.json["token"])["result"]
@@ -93,19 +95,20 @@ class CrealitycloudPlugin(
 				"region": self._res["regionId"]
                 }
             self._regionId = self._res["regionId"]
-            with io.open(
+            with open(
                 self.get_plugin_data_folder()+'/config.json', "w", encoding="utf-8"
             ) as config_file:
                 json.dump(self._config,config_file, indent=2, separators=(',',':'))
-                self._logger.info(self._config)
+                self._logger.debug("%s", self._config)
             return {"code": 0}
         except Exception as e:
-            self._logger.error(str(e))
+            self._logger.error(e)
             return {"code": -1}
 
     @octoprint.plugin.BlueprintPlugin.route("/status", methods=["GET"])
-    @admin_permission.require(403)
+    @Permissions.SETTINGS.require(403)
     def get_status(self):
+        country = None
         if os.path.exists(self.get_plugin_data_folder() + "/config.json"):
             if self._crealitycloud.get_server_region(self._regionId) is not None:
                 country = self._crealitycloud.get_server_region(self._regionId)
@@ -132,7 +135,7 @@ class CrealitycloudPlugin(
         if self.printing_befor_connect:
             leftnum = 0
             rightnum = 0
-            if not self._crealitycloud._iot_connected:
+            if not self._crealitycloud.iot_connected:
                 return line
             if "SD printing byte " in line:
                 self._crealitycloud._aliprinter.mcu_is_print = 1
@@ -176,7 +179,7 @@ class CrealitycloudPlugin(
 
 __plugin_name__ = "Crealitycloud Plugin"
 
-__plugin_pythoncompat__ = ">=3,<4"
+__plugin_pythoncompat__ = ">=3.7,<4"
 
 
 def __plugin_load__():

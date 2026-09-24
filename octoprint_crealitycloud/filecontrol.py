@@ -4,7 +4,7 @@ import os
 from octoprint.filemanager.destinations import FileDestinations
 
 
-class filecontrol(object):
+class filecontrol:
     def __init__(self, plugin):
 
         self._fileinfo = ""
@@ -15,6 +15,15 @@ class filecontrol(object):
 
         self.Filemanager = plugin._file_manager
 
+    def _flatten(self, entries):
+        files = []
+        for entry in entries.values():
+            if entry.get("type") == "folder":
+                files += self._flatten(entry.get("children") or {})
+            else:
+                files.append(entry)
+        return files
+
     # 获取树莓派TF卡中的文件信息,储存至self._filelist
     def _getTFfileinfo(self):
         origin = FileDestinations.LOCAL
@@ -23,7 +32,7 @@ class filecontrol(object):
         recursive = True
         level = 0
         allow_from_cache = True
-        self._filelist = list(
+        self._filelist = self._flatten(
             self.Filemanager.list_files(
                 origin,
                 path=path,
@@ -31,7 +40,7 @@ class filecontrol(object):
                 recursive=recursive,
                 level=level,
                 force_refresh=not allow_from_cache,
-            )[origin].values()
+            )[origin]
         )
         # 按照文件修改时间重新排序
         self._filelist = sorted(self._filelist, key=lambda x: x["date"], reverse=True)
@@ -54,15 +63,18 @@ class filecontrol(object):
                 self._filedict = {}
                 self._fileinfo = ""
                 num_fileinfo = 0
+            date = file["date"]
+            if hasattr(date, "timestamp"):
+                date = int(date.timestamp())
             # 生成文件信息字符串
             self._fileinfo = (
                 str(self._fileinfo)
                 + "/local:"
-                + str(file["name"])
+                + str(file["path"])
                 + ":"
                 + str(file["size"])
                 + ":"
-                + str(file["date"])
+                + str(date)
                 + ";"
             )
             num_fileinfo = num_fileinfo + 1
@@ -93,7 +105,7 @@ class filecontrol(object):
                 try:
                     self.Filemanager.remove_file(destination, path)
                 except Exception as e:
-                    self._logger.error(str(e))
+                    self._logger.error(e)
         if "rename" in v:
             if "local" in v:
                 v = str(v).lstrip("renamebox:/local:")

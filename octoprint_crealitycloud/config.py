@@ -1,9 +1,8 @@
 import json
-import logging
 import os
 
 
-class CrealityConfig(object):
+class CrealityConfig:
     def __init__(self, plugin) -> None:
         self._path = self.path = os.path.join(
             plugin.get_plugin_data_folder(), "config.json"
@@ -17,13 +16,13 @@ class CrealityConfig(object):
 
     def load(self):
         if os.path.exists(self._path):
-            with open(self._path, "r") as f:
+            with open(self._path) as f:
                 try:
                     self._data = json.load(f)
                 except:
                     os.remove(self._path)
         if os.path.exists(self._p2p_path):
-            with open(self._p2p_path, "r") as f:
+            with open(self._p2p_path) as f:
                 try:
                     self._p2pdata = json.load(f)
                 except:
